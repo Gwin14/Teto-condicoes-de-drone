@@ -1,12 +1,13 @@
-import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { InlineError, PressableScale, Skeleton, StatusDot, T } from '@/components/ui';
 import { S4_AVAILABLE, useConstellations, useScintillation, useSpaceWeather } from '@/hooks/useConditions';
 import { useNow } from '@/hooks/useNow';
+import { fmtNum, t } from '@/i18n';
 import { CONSTELLATIONS, fmtDop, snapshot } from '@/lib/gnss';
-import { kpLabel } from '@/lib/scoring';
+import { kpLabel, scintLabel } from '@/lib/scoring';
+import { openPro } from '@/lib/purchases';
 import { isS4Fresh, s4At } from '@/lib/spaceWeather';
 import { useApp } from '@/store/app';
 import { radius, space, useConstellationColors, useTheme, type Verdict } from '@/theme/tokens';
@@ -32,14 +33,14 @@ export function GnssCard({ lat, lon, elevation, kp }: { lat: number; lon: number
 
   return (
     <PressableScale
-      onPress={() => router.push('/gnss')}
+      onPress={() => openPro('/gnss')}
       accessibilityRole="button"
-      accessibilityLabel="Abrir satélites e interferências"
+      accessibilityLabel={t('Abrir satélites e interferências')}
       style={{ backgroundColor: c.card, borderRadius: radius.card, borderCurve: 'continuous', padding: space.lg, gap: space.lg }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <View style={{ gap: 2 }}>
           <T v="caption" tone="secondary" style={{ textTransform: 'uppercase', letterSpacing: 0.4, fontWeight: '600' }}>
-            Satélites visíveis · acima de {mask}°
+            {t('Satélites visíveis · acima de {mask}°', { mask })}
           </T>
           {snap ? (
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
@@ -57,7 +58,7 @@ export function GnssCard({ lat, lon, elevation, kp }: { lat: number; lon: number
         <Icon name="chevronRight" size={13} color={c.tertiary} weight="semibold" />
       </View>
 
-      {sats.error && !snap ? <InlineError message="Elementos orbitais indisponíveis agora." onRetry={() => sats.refetch()} /> : null}
+      {sats.error && !snap ? <InlineError message={t('Elementos orbitais indisponíveis agora.')} onRetry={() => sats.refetch()} /> : null}
 
       {snap ? (
         <View style={{ flexDirection: 'row', gap: space.sm }}>
@@ -78,13 +79,13 @@ export function GnssCard({ lat, lon, elevation, kp }: { lat: number; lon: number
       ) : null}
 
       <View style={{ gap: space.sm }}>
-        <Row v={kpV} label="Geomagnetismo" value={`Kp ${kp.toFixed(1).replace('.', ',')} · ${kpLabel(kp)}`} />
+        <Row v={kpV} label={t('Geomagnetismo')} value={`Kp ${fmtNum(kp, 1)} · ${kpLabel(kp)}`} />
         <Row
           v={scV}
-          label="Cintilação (INPE)"
-          value={scint ? `${cap(scint.level)} · S4 ${scint.s4.toFixed(2).replace('.', ',')}` : !S4_AVAILABLE ? 'Só no app' : s4.isLoading ? '…' : 'Sem medição'}
+          label={t('Cintilação (INPE)')}
+          value={scint ? `${cap(scintLabel[scint.level])} · S4 ${fmtNum(scint.s4, 2)}` : !S4_AVAILABLE ? t('Só no app') : s4.isLoading ? '…' : t('Sem medição')}
         />
-        <Row v={rV} label="Rádio (erupções)" value={sw.data ? (r > 0 ? `R${r}` : 'Calmo') : '—'} />
+        <Row v={rV} label={t('Rádio (erupções)')} value={sw.data ? (r > 0 ? `R${r}` : t('Calmo')) : '—'} />
       </View>
     </PressableScale>
   );

@@ -27,7 +27,8 @@ export async function startFlight(data: Conditions, loc: ResolvedLocation, drone
     usableMinutes: Math.max(3, data.usable),
   });
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-  const liveActivity = startFlightActivity(buildActivityProps(session, st.speedUnit, data.now.dirAlt));
+  // Live Activity é do Teto Pro; o cronômetro e o diário de bordo continuam grátis.
+  const liveActivity = st.pro ? startFlightActivity(buildActivityProps(session, st.speedUnit, data.now.dirAlt)) : false;
   batteryReminderId = !st.notifyWindows ? null : await scheduleBatteryReminder(session.startedAt + session.usableMinutes * 60_000).catch(() => null);
   return { session, liveActivity };
 }

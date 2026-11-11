@@ -59,11 +59,11 @@ const FlightActivity = (props: FlightActivityProps, env: LiveActivityEnvironment
         <HStack spacing={6}>
           <Image systemName="airplane" size={13} color={ACCENT} />
           <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(DIM), lineLimit(1)]}>
-            {`Em voo · ${props.place}`}
+            {`${props.l?.inFlight ?? 'Em voo'} · ${props.place}`}
           </Text>
           <Spacer />
           <Text modifiers={[font({ size: 13, weight: 'semibold' }), foregroundStyle(statusColor)]}>
-            {stale ? 'Desatualizado' : props.verdictLabel}
+            {stale ? (props.l?.stale ?? 'Desatualizado') : props.verdictLabel}
           </Text>
         </HStack>
         <HStack alignment="lastTextBaseline">
@@ -73,12 +73,12 @@ const FlightActivity = (props: FlightActivityProps, env: LiveActivityEnvironment
             <Text modifiers={[font({ size: 20, weight: 'semibold' }), monospacedDigit(), foregroundStyle(WHITE)]}>
               {`${props.wind} ${props.unit}`}
             </Text>
-            <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{`vento ${props.dir} · raj ${props.gust}`}</Text>
+            <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{`${props.l?.wind ?? 'vento'} ${props.dir} · ${props.l?.gust ?? 'raj'} ${props.gust}`}</Text>
           </VStack>
         </HStack>
         <VStack alignment="leading" spacing={4}>
           <Battery />
-          <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{`Bateria útil estimada · pouse até ${props.landBy}`}</Text>
+          <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{props.l?.battery ?? `Bateria útil estimada · pouse até ${props.landBy}`}</Text>
         </VStack>
       </VStack>
     ),
@@ -87,13 +87,13 @@ const FlightActivity = (props: FlightActivityProps, env: LiveActivityEnvironment
     minimal: <Image systemName="airplane" color={statusColor} />,
     expandedLeading: (
       <VStack alignment="leading" spacing={2} modifiers={[padding({ leading: 8, top: 4 })]}>
-        <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>Em voo</Text>
+        <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{props.l?.inFlight ?? 'Em voo'}</Text>
         <Elapsed size={24} width={100} />
       </VStack>
     ),
     expandedTrailing: (
       <VStack alignment="trailing" spacing={2} modifiers={[padding({ trailing: 8, top: 4 })]}>
-        <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{`Vento ${props.dir}`}</Text>
+        <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM)]}>{`${props.l?.windCap ?? 'Vento'} ${props.dir}`}</Text>
         <Text modifiers={[font({ size: 20, weight: 'semibold' }), monospacedDigit(), foregroundStyle(WHITE)]}>
           {`${props.wind} ${props.unit}`}
         </Text>
@@ -105,7 +105,7 @@ const FlightActivity = (props: FlightActivityProps, env: LiveActivityEnvironment
         <HStack>
           <Text modifiers={[font({ size: 12 }), foregroundStyle(DIM), lineLimit(1)]}>{props.drone}</Text>
           <Spacer />
-          <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(WHITE)]}>{`Pouse até ${props.landBy}`}</Text>
+          <Text modifiers={[font({ size: 12, weight: 'semibold' }), foregroundStyle(WHITE)]}>{props.l?.landBy ?? `Pouse até ${props.landBy}`}</Text>
         </HStack>
       </VStack>
     ),

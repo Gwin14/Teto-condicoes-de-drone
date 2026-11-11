@@ -2,8 +2,11 @@
  * Clientes das fontes de dados públicas (sem chave de API):
  * - Open-Meteo: previsão horária, vento em 10/80/120/180 m, geocodificação.
  * - NOAA SWPC: índice Kp planetário (interferência no GNSS).
- * - aviationweather.gov: METAR dos aeródromos próximos.
+ * - aviationweather.gov: METAR dos aeródromos próximos e aeroportos fora do Brasil.
  */
+import { lang, t } from '@/i18n';
+
+import type { Airport } from './airports';
 
 export type Hour = {
   time: Date;
@@ -302,14 +305,16 @@ export type Place = {
   detail: string;
   lat: number;
   lon: number;
+  /** ISO 3166-1 alfa-2, quando o geocodificador informa. */
+  country?: string;
 };
 
 export async function searchPlaces(q: string, signal?: AbortSignal): Promise<Place[]> {
   if (q.trim().length < 2) return [];
   const r = await getJson<{
-    results?: { id: number; name: string; admin1?: string; country?: string; latitude: number; longitude: number }[];
+    results?: { id: number; name: string; admin1?: string; country?: string; country_code?: string; latitude: number; longitude: number }[];
   }>(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=12&language=pt&format=json`,
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q.trim())}&count=12&language=${lang}&format=json`,
     signal
   );
   return (r.results ?? []).map((p) => ({
@@ -318,7 +323,41 @@ export async function searchPlaces(q: string, signal?: AbortSignal): Promise<Pla
     detail: [p.admin1, p.country].filter(Boolean).join(', '),
     lat: p.latitude,
     lon: p.longitude,
+    country: p.country_code,
   }));
+}
+
+/* ------------------------------------------------- Aeroportos fora do Brasil */
+
+/**
+ * Aeroportos num raio de `km` pelo aviationweather.gov (base global da FAA). Cobre bem os
+ * aeroportos com operação regular; pistas pequenas e helipontos podem faltar.
+ */
+export async function fetchAirportsNear(lat: number, lon: number, km: number, signal?: AbortSignal): Promise<Airport[]> {
+  const dLat = km / 111;
+  const dLon = km / (111 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+  const bbox = [lat - dLat, lon - dLon, lat + dLat, lon + dLon].map((v) => v.toFixed(3)).join(',');
+  // `airport` só devolve os aeroportos principais; `stationinfo` cobre os aeródromos menores com METAR.
+  const [major, stations] = await Promise.allSettled([
+    getJson<Record<string, unknown>[]>(`https://aviationweather.gov/api/data/airport?bbox=${bbox}&format=json`, signal),
+    getJson<Record<string, unknown>[]>(`https://aviationweather.gov/api/data/stationinfo?bbox=${bbox}&format=json`, signal),
+  ]);
+  const title = (s: string) => s.trim().toLowerCase().replace(/(^|[\s/(-])(\p{L})/gu, (_, p: string, l: string) => p + l.toUpperCase());
+  const out = new Map<string, Airport>();
+  const add = (icao: unknown, name: unknown, country: unknown, lat: unknown, lon: unknown) => {
+    const code = String(icao ?? '');
+    if (!/^[A-Z0-9]{4}$/.test(code) || typeof lat !== 'number' || typeof lon !== 'number' || out.has(code)) return;
+    out.set(code, { icao: code, name: title(String(name ?? code)), city: '', uf: String(country ?? ''), lat, lon, kind: 'aeroporto' });
+  };
+  if (major.status === 'fulfilled') for (const a of major.value) add(a.icaoId, a.name, a.country, a.lat, a.lon);
+  if (stations.status === 'fulfilled') {
+    for (const s of stations.value) {
+      const types = Array.isArray(s.siteType) ? (s.siteType as string[]) : [];
+      if (types.includes('METAR')) add(s.icaoId, s.site, s.country, s.lat, s.lon);
+    }
+  }
+  if (out.size === 0 && major.status === 'rejected' && stations.status === 'rejected') throw major.reason;
+  return [...out.values()];
 }
 
 /* ------------------------------------------------------------------- METAR */
@@ -426,18 +465,18 @@ export async function fetchObservationsNear(lat: number, lon: number, km: number
 /* -------------------------------------------------------------- WMO codes */
 
 export function weatherLabel(code: number) {
-  if (code === 0) return 'Céu limpo';
-  if (code === 1) return 'Predomínio de sol';
-  if (code === 2) return 'Parcialmente nublado';
-  if (code === 3) return 'Nublado';
-  if (code === 45 || code === 48) return 'Nevoeiro';
-  if (code >= 51 && code <= 57) return 'Garoa';
-  if (code >= 61 && code <= 67) return 'Chuva';
-  if (code >= 71 && code <= 77) return 'Neve';
-  if (code >= 80 && code <= 82) return 'Pancadas de chuva';
-  if (code >= 85 && code <= 86) return 'Pancadas de neve';
-  if (code >= 95) return 'Trovoada';
-  return 'Tempo variável';
+  if (code === 0) return t('Céu limpo');
+  if (code === 1) return t('Predomínio de sol');
+  if (code === 2) return t('Parcialmente nublado');
+  if (code === 3) return t('Nublado');
+  if (code === 45 || code === 48) return t('Nevoeiro');
+  if (code >= 51 && code <= 57) return t('Garoa');
+  if (code >= 61 && code <= 67) return t('Chuva');
+  if (code >= 71 && code <= 77) return t('Neve');
+  if (code >= 80 && code <= 82) return t('Pancadas de chuva');
+  if (code >= 85 && code <= 86) return t('Pancadas de neve');
+  if (code >= 95) return t('Trovoada');
+  return t('Tempo variável');
 }
 
 export type WeatherIcon = 'sun' | 'moon' | 'cloudSun' | 'cloudMoon' | 'cloud' | 'fog' | 'rain' | 'storm' | 'snow';

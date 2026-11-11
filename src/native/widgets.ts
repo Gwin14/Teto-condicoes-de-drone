@@ -1,4 +1,5 @@
 import type { Conditions } from '@/hooks/useConditions';
+import { fmtNum, t } from '@/i18n';
 import { cardinal, convertSpeed, fmtHour, fmtTemp, fmtTime, fmtWeekday, speedUnitLabel, type SpeedUnit, type TempUnit } from '@/lib/format';
 import { type FlightWindow, verdictLabel, verdictShort } from '@/lib/scoring';
 import type { FlightSession } from '@/store/app';
@@ -34,7 +35,7 @@ function load(): WidgetsModule | null {
 }
 
 function windowLabel(w: FlightWindow | undefined) {
-  if (!w) return 'Sem janela boa nas próximas 48 h';
+  if (!w) return t('Sem janela boa nas próximas 48 h');
   return `${fmtWeekday(w.start)} ${fmtHour(w.start)}–${fmtHour(w.end)} · ${w.avgScore}`;
 }
 
@@ -65,12 +66,21 @@ export function buildWidgetProps(
     dir: cardinal(s.dirAlt),
     temp: fmtTemp(s.hour.temp, tempUnit),
     rain: `${Math.round(s.hour.precipProb)}%`,
-    kp: s.kp.toFixed(1).replace('.', ','),
+    kp: fmtNum(s.kp, 1),
     altitude,
     next: windowLabel(nextWindow),
     updated: fmtTime(new Date(c.forecast.fetchedAt)),
     drone: droneName,
     hours: nextHours.map((h) => ({ t: fmtHour(h.hour.time), s: h.score, v: h.verdict, w: speed(h.windAlt, unit) })),
+    l: {
+      gust: t('raj'),
+      next: t('PRÓXIMAS HORAS'),
+      windAt: t('Vento a {alt} m', { alt: altitude }),
+      gusts: t('Rajadas'),
+      rain: t('Chuva'),
+      temp: t('Temperatura'),
+      kp: t('Índice Kp'),
+    },
   };
 }
 
@@ -95,8 +105,7 @@ export function syncWidgets(
     if (process.env.EXPO_OS === 'ios') {
       const entries = [{ date: new Date(), props: now }];
       c.hours.forEach((h, i) => {
-        const t = h.hour.time.getTime();
-        if (t > Date.now() && entries.length < 13) {
+        if (h.hour.time.getTime() > Date.now() && entries.length < 13) {
           entries.push({ date: h.hour.time, props: buildWidgetProps(c, placeName, droneName, altitude, unit, tempUnit, i) });
         }
       });
@@ -114,12 +123,13 @@ export function syncWidgets(
 
 export function buildActivityProps(s: FlightSession, unit: SpeedUnit, dirDeg: number): FlightActivityProps {
   const batteryEndMs = s.startedAt + s.usableMinutes * 60_000;
+  const landBy = fmtTime(new Date(batteryEndMs));
   return {
     place: s.place,
     drone: s.droneName,
     startMs: s.startedAt,
     batteryEndMs,
-    landBy: fmtTime(new Date(batteryEndMs)),
+    landBy,
     score: s.score,
     verdict: s.verdict,
     verdictLabel: verdictLabel[s.verdict],
@@ -127,6 +137,15 @@ export function buildActivityProps(s: FlightSession, unit: SpeedUnit, dirDeg: nu
     gust: speed(s.gust, unit),
     unit: speedUnitLabel[unit],
     dir: cardinal(dirDeg),
+    l: {
+      inFlight: t('Em voo'),
+      stale: t('Desatualizado'),
+      wind: t('vento'),
+      windCap: t('Vento'),
+      gust: t('raj'),
+      battery: t('Bateria útil estimada · pouse até {time}', { time: landBy }),
+      landBy: t('Pouse até {time}', { time: landBy }),
+    },
   };
 }
 

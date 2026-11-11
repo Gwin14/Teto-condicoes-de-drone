@@ -1,0 +1,9 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "Teto",
+    "NSLocationWhenInUseUsageDescription": "Teto usa tu ubicación para mostrar las condiciones de vuelo exactamente donde estás y los aeropuertos cercanos."
+  },
+  "android": {
+    "app_name": "Teto"
+  }
+}

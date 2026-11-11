@@ -1,11 +1,15 @@
+import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { IslandPreview } from '@/components/flight/IslandPreview';
 import { Icon } from '@/components/Icon';
-import { Card, ListRow, T } from '@/components/ui';
+import { ProBadge } from '@/components/ProBadge';
+import { Button, Card, ListRow, T } from '@/components/ui';
 import { useConditions } from '@/hooks/useConditions';
 import { useActiveLocation } from '@/hooks/useLocation';
+import { t } from '@/i18n';
+import { useIsPro } from '@/lib/purchases';
 import { capabilities, capabilityNote } from '@/native/capabilities';
 import { buildWidgetProps } from '@/native/widgets';
 import { useApp } from '@/store/app';
@@ -19,9 +23,10 @@ import type { ConditionsWidgetProps } from '@/widgets/types';
 export default function WidgetsScreen() {
   const { c } = useTheme();
   const { location } = useActiveLocation();
-  const { data, drone, altitude } = useConditions(location?.lat, location?.lon);
+  const { data, drone, altitude } = useConditions(location?.lat, location?.lon, location?.country);
   const unit = useApp((s) => s.speedUnit);
   const tempUnit = useApp((s) => s.tempUnit);
+  const isPro = useIsPro();
   const p = data && location ? buildWidgetProps(data, location.name, drone.name, altitude, unit, tempUnit) : null;
 
   return (
@@ -29,22 +34,35 @@ export default function WidgetsScreen() {
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: c.background }}
       contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: 80 }}>
+      {!isPro ? (
+        <Card style={{ gap: space.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+            <ProBadge />
+            <T v="headline">{t('Widgets e Live Activity são do Teto Pro')}</T>
+          </View>
+          <T v="subhead" tone="secondary">
+            {t('Sem o Pro, os widgets mostram só “Abra o Teto” e o voo não aparece na Dynamic Island. As prévias abaixo mostram como fica.')}
+          </T>
+          <Button title={t('Conhecer o Teto Pro')} onPress={() => router.push('/paywall')} />
+        </Card>
+      ) : null}
+
       <Card padded={false}>
         <ListRow
           icon="widgets"
-          title="Widgets de tela inicial"
+          title={t('Widgets de tela inicial')}
           subtitle={capabilityNote('widgets')}
           right={<Icon name={capabilities.widgets ? 'check' : 'info'} size={20} color={capabilities.widgets ? c.go : c.tertiary} />}
         />
         <ListRow
           icon="lock"
-          title="Widgets de tela bloqueada"
-          subtitle={process.env.EXPO_OS === 'ios' ? capabilityNote('widgets') : 'Exclusivo do iOS'}
+          title={t('Widgets de tela bloqueada')}
+          subtitle={process.env.EXPO_OS === 'ios' ? capabilityNote('widgets') : t('Exclusivo do iOS')}
           right={<Icon name={capabilities.widgets && process.env.EXPO_OS === 'ios' ? 'check' : 'info'} size={20} color={capabilities.widgets ? c.go : c.tertiary} />}
         />
         <ListRow
           icon="island"
-          title="Live Activity e Dynamic Island"
+          title={t('Live Activity e Dynamic Island')}
           subtitle={capabilityNote('liveActivities')}
           last
           right={<Icon name={capabilities.liveActivities ? 'check' : 'info'} size={20} color={capabilities.liveActivities ? c.go : c.tertiary} />}
@@ -53,17 +71,17 @@ export default function WidgetsScreen() {
 
       {!p ? (
         <T v="subhead" tone="secondary">
-          Carregando dados para as prévias…
+          {t('Carregando dados para as prévias…')}
         </T>
       ) : (
         <>
-          <Section title="Tela inicial · pequeno e médio">
+          <Section title={t('Tela inicial · pequeno e médio')}>
             <View style={{ flexDirection: 'row', gap: space.lg, flexWrap: 'wrap' }}>
               <SmallWidget p={p} />
               <MediumWidget p={p} />
             </View>
           </Section>
-          <Section title="Tela bloqueada">
+          <Section title={t('Tela bloqueada')}>
             <View style={{ backgroundColor: '#1B2433', borderRadius: 28, borderCurve: 'continuous', padding: space.xl, gap: space.lg }}>
               <T v="caption" style={{ color: '#FFFFFFCC', textAlign: 'center' }}>
                 {`${p.verdictShort} · ${p.wind} ${p.unit}`}
@@ -87,13 +105,13 @@ export default function WidgetsScreen() {
       )}
 
       <Card style={{ gap: space.sm }}>
-        <T v="headline">Como ativar</T>
+        <T v="headline">{t('Como ativar')}</T>
         <T v="subhead" tone="secondary">
-          Widgets e Live Activities precisam de código nativo, que o Expo Go não inclui. Gere uma development build com{' '}
+          {t('Widgets e Live Activities precisam de código nativo, que o Expo Go não inclui. Gere uma development build com')}{' '}
           <T v="subhead" style={{ fontFamily: process.env.EXPO_OS === 'ios' ? 'Menlo' : 'monospace' }}>
             npx expo run:ios
           </T>{' '}
-          (ou EAS Build). Todo o resto do app continua funcionando no Expo Go.
+          {t('(ou EAS Build). Todo o resto do app continua funcionando no Expo Go.')}
         </T>
       </Card>
     </ScrollView>
@@ -169,7 +187,7 @@ function MediumWidget({ p }: { p: ConditionsWidgetProps }) {
         </View>
         <View style={{ alignItems: 'flex-end', justifyContent: 'space-between' }}>
           <T v="caption2" tone="secondary">
-            PRÓXIMAS HORAS
+            {t('PRÓXIMAS HORAS')}
           </T>
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-end' }}>
             {p.hours.slice(0, 6).map((h) => (
@@ -213,7 +231,7 @@ function LockRect({ p }: { p: ConditionsWidgetProps }) {
         {`${p.verdictShort} · ${p.score}`}
       </T>
       <T v="footnote" style={{ color: '#FFFFFFCC' }} num numberOfLines={1}>
-        {`${p.wind} ${p.unit} ${p.dir} · raj ${p.gust}`}
+        {`${p.wind} ${p.unit} ${p.dir} · ${t('raj')} ${p.gust}`}
       </T>
       <T v="footnote" style={{ color: '#FFFFFFCC' }} numberOfLines={1}>
         {p.next}

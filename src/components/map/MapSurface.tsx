@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import MapView, { Circle, Marker } from 'react-native-maps';
 
+import { t } from '@/i18n';
 import { zoneRadii } from '@/lib/airports';
 import { useTheme } from '@/theme/tokens';
 
@@ -31,7 +32,7 @@ export function MapSurface(p: MapSurfaceProps) {
       onLongPress={(e) => p.onLongPress({ lat: e.nativeEvent.coordinate.latitude, lon: e.nativeEvent.coordinate.longitude })}>
       {p.showZones
         ? p.airports.map((a) => {
-            const r = zoneRadii();
+            const r = zoneRadii(p.region);
             return [
               <Circle
                 key={`${a.icao}-c`}
@@ -41,6 +42,7 @@ export function MapSurface(p: MapSurfaceProps) {
                 strokeColor={c.caution}
                 strokeWidth={1}
               />,
+              r.critical > 0 ? (
               <Circle
                 key={`${a.icao}-r`}
                 center={{ latitude: a.lat, longitude: a.lon }}
@@ -48,7 +50,8 @@ export function MapSurface(p: MapSurfaceProps) {
                 fillColor={c.mapZoneCritical}
                 strokeColor={c.nogo}
                 strokeWidth={1.5}
-              />,
+              />
+              ) : null,
             ];
           })
         : null}
@@ -72,7 +75,7 @@ export function MapSurface(p: MapSurfaceProps) {
         />
       ))}
       {p.selected ? (
-        <Marker coordinate={{ latitude: p.selected.lat, longitude: p.selected.lon }} pinColor={c.accent} title="Ponto selecionado" />
+        <Marker coordinate={{ latitude: p.selected.lat, longitude: p.selected.lon }} pinColor={c.accent} title={t('Ponto selecionado')} />
       ) : null}
     </MapView>
   );

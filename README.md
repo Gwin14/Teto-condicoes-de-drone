@@ -36,6 +36,17 @@ App em React Native + Expo (SDK 58, Expo Router) que diz se dá para voar agora,
 - Android: widget de tela inicial (Glance / Jetpack Compose).
 - Live Activity "Em voo" (tela bloqueada e Dynamic Island).
 
+## Idiomas e regiões
+
+- Português (Brasil), inglês e espanhol, escolhidos pelo idioma do aparelho (`src/i18n`). O texto-fonte é o português: `t('Bom para voar')`. Traduções em `src/i18n/en.ts` e `es.ts`; `npm run i18n:check` aponta chaves faltando.
+- Regras por região (`src/lib/region.ts`): no Brasil valem ANAC/DECEA/SARPAS e o cadastro de aeródromos da ANAC; fora dele, aeroportos do aviationweather.gov com alerta de 5 NM e link para a autoridade local.
+
+## Teto Pro (RevenueCat)
+
+- Entitlement `pro`, offering `default`: `app.teto.drone.pro.annual` (7 dias grátis), `.monthly` e `.lifetime` (vitalício).
+- `src/lib/purchases.ts` configura o SDK, guarda o estado em `useApp().pro` e expõe `openPro(rota)` / `requirePro(ação)`. Paywall em `src/app/paywall.tsx`.
+- Grátis: condições de agora, 24 h, fatores, mapa, checklist, cronômetro e diário. Pro: 7 dias, alertas de janela, widgets e Live Activity, satélites/clima espacial, bússola, retorno seguro, planejador de luz e drone personalizado.
+
 ## Expo Go × development build
 
 Tudo funciona no **Expo Go**, exceto widgets e Live Activities, que exigem código nativo:

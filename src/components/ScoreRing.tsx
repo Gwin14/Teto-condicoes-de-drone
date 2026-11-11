@@ -12,6 +12,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { useTheme, type Verdict, verdictColor } from '@/theme/tokens';
 
 import { T } from './ui';
+import { t } from '@/i18n';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -67,7 +68,7 @@ export function ScoreRing({ score, verdict, size = 132, stroke = 12, label = 'sc
           animatedProps={animatedProps}
         />
       </Svg>
-      <T v="display" num style={{ fontSize: size * 0.36, lineHeight: size * 0.4 }} accessibilityLabel={`Score ${score} de 100`}>
+      <T v="display" num style={{ fontSize: size * 0.36, lineHeight: size * 0.4 }} accessibilityLabel={t('Score {score} de 100', { score })}>
         {score}
       </T>
       <T v="caption2" tone="secondary" style={{ textTransform: 'uppercase', letterSpacing: 1, marginTop: -2 }}>

@@ -1,3 +1,4 @@
+import { t } from '@/i18n';
 import { fmtHour, fmtWeekday } from '@/lib/format';
 import type { FlightWindow } from '@/lib/scoring';
 
@@ -53,8 +54,13 @@ export async function scheduleWindowAlert(w: FlightWindow, place: string) {
   const fireAt = new Date(Math.max(Date.now() + 60_000, w.start.getTime() - 30 * 60_000));
   const id = await n.scheduleNotificationAsync({
     content: {
-      title: `Janela de voo em ${place}`,
-      body: `${fmtWeekday(w.start)} das ${fmtHour(w.start)} às ${fmtHour(w.end)} · score médio ${w.avgScore}. Bons voos!`,
+      title: t('Janela de voo em {place}', { place }),
+      body: t('{day} das {from} às {to} · score médio {score}. Bons voos!', {
+        day: fmtWeekday(w.start),
+        from: fmtHour(w.start),
+        to: fmtHour(w.end),
+        score: w.avgScore,
+      }),
       data: { url: '/' },
     },
     trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: fireAt },
@@ -76,8 +82,8 @@ export async function scheduleBatteryReminder(atMs: number) {
   if (!ok || atMs < Date.now() + 30_000) return null;
   return n.scheduleNotificationAsync({
     content: {
-      title: 'Hora de voltar',
-      body: 'A bateria útil estimada está acabando. Inicie o retorno e pouse com folga.',
+      title: t('Hora de voltar'),
+      body: t('A bateria útil estimada está acabando. Inicie o retorno e pouse com folga.'),
       data: { url: '/flight' },
     },
     trigger: { type: n.SchedulableTriggerInputTypes.DATE, date: new Date(atMs) },

@@ -3,6 +3,7 @@ import { NativeTabs } from 'expo-router/native-tabs';
 import { Pressable, View } from 'react-native';
 
 import { useNow } from '@/hooks/useNow';
+import { t } from '@/i18n';
 import { fmtDuration } from '@/lib/format';
 import { useApp } from '@/store/app';
 import { useTheme } from '@/theme/tokens';
@@ -22,7 +23,7 @@ export function FlightAccessory() {
   return (
     <Pressable
       onPress={() => router.navigate('/flight')}
-      accessibilityLabel="Voo em andamento"
+      accessibilityLabel={t('Voo em andamento')}
       style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 10 }}>
       <Icon name="flight" size={16} color={c.accent} />
       <T v="subhead" style={{ fontWeight: '600' }} num>
@@ -36,7 +37,7 @@ export function FlightAccessory() {
         <View style={{ flex: 1 }} />
       )}
       <T v="footnote" tone={remaining < 3 * 60_000 ? 'nogo' : 'secondary'} num>
-        {remaining > 0 ? `${Math.ceil(remaining / 60_000)} min` : 'Pouse'}
+        {remaining > 0 ? `${Math.ceil(remaining / 60_000)} min` : t('Pouse')}
       </T>
     </Pressable>
   );

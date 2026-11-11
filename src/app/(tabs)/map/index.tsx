@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,8 @@ import { MapSurface } from '@/components/map/MapSurface';
 import type { LatLon } from '@/components/map/types';
 import { Button, StatusPill, T } from '@/components/ui';
 import { useAerodromes, useConditions } from '@/hooks/useConditions';
-import { useActiveLocation } from '@/hooks/useLocation';
+import { countryAt, useActiveLocation } from '@/hooks/useLocation';
+import { t } from '@/i18n';
 import { airspaceAt, nearbyAirports } from '@/lib/airports';
 import { cardinal, fmtDistance, fmtSpeed } from '@/lib/format';
 import { verdictLabel } from '@/lib/scoring';
@@ -29,17 +30,31 @@ export default function MapScreen() {
   const showZones = useApp((s) => s.showZones);
   const set = useApp((s) => s.set);
   const unit = useApp((s) => s.speedUnit);
-  const [selected, setSelected] = useState<(LatLon & { name?: string }) | null>(null);
+  const [selected, setSelected] = useState<(LatLon & { name?: string; country?: string }) | null>(null);
   const [recenterKey, setRecenterKey] = useState(0);
 
   const center = location ?? FALLBACK;
   const altitude = useApp((s) => s.altitude);
-  const aerodromes = useAerodromes();
+  const centerCountry = location?.country;
+  const { region, list: aerodromes } = useAerodromes(center.lat, center.lon, centerCountry);
   // Cadastro completo tem ~4.400 aeródromos: no mapa, os 60 mais próximos.
-  const airports = nearbyAirports(aerodromes, center.lat, center.lon, 150, altitude).slice(0, 60);
-  const here = useConditions(center.lat, center.lon);
-  const point = useConditions(selected?.lat, selected?.lon);
-  const pointAirspace = selected ? airspaceAt(aerodromes, selected.lat, selected.lon, altitude) : null;
+  const airports = nearbyAirports(aerodromes, center.lat, center.lon, 150, altitude, region).slice(0, 60);
+  const here = useConditions(center.lat, center.lon, centerCountry);
+  const point = useConditions(selected?.lat, selected?.lon, selected?.country);
+  const pointRegion = point.data?.region ?? region;
+  const pointAirspace = selected ? airspaceAt(aerodromes, selected.lat, selected.lon, altitude, pointRegion) : null;
+
+  // País do ponto escolhido no mapa: decide entre regras do Brasil e regras locais.
+  useEffect(() => {
+    if (!selected || selected.country) return;
+    let alive = true;
+    countryAt(selected.lat, selected.lon).then((cc) => {
+      if (alive && cc) setSelected((s) => (s && s.lat === selected.lat && s.lon === selected.lon ? { ...s, country: cc } : s));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [selected]);
   // A tab bar do iOS flutua sobre o mapa; no Android o conteúdo termina acima dela.
   const bottomOffset = process.env.EXPO_OS === 'ios' ? insets.bottom + 64 : process.env.EXPO_OS === 'web' ? 88 : space.lg;
 
@@ -51,14 +66,14 @@ export default function MapScreen() {
   const saveSelected = () => {
     if (!selected) return;
     const n = spots.length + 1;
-    addSpot({ name: selected.name ?? `Ponto de voo ${n}`, lat: selected.lat, lon: selected.lon, detail: `${selected.lat.toFixed(4)}, ${selected.lon.toFixed(4)}` });
+    addSpot({ name: selected.name ?? t('Ponto de voo {n}', { n }), lat: selected.lat, lon: selected.lon, country: selected.country, detail: `${selected.lat.toFixed(4)}, ${selected.lon.toFixed(4)}` });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     setSelected(null);
   };
 
   const useSelected = () => {
     if (!selected) return;
-    set('location', { kind: 'place', name: selected.name ?? 'Ponto no mapa', detail: `${selected.lat.toFixed(4)}, ${selected.lon.toFixed(4)}`, lat: selected.lat, lon: selected.lon });
+    set('location', { kind: 'place', name: selected.name ?? t('Ponto no mapa'), detail: `${selected.lat.toFixed(4)}, ${selected.lon.toFixed(4)}`, lat: selected.lat, lon: selected.lon, country: selected.country });
     setSelected(null);
     router.navigate('/');
   };
@@ -72,9 +87,10 @@ export default function MapScreen() {
         spots={spots}
         selected={selected}
         showZones={showZones}
+        region={region}
         dark={isDark}
         onLongPress={onLongPress}
-        onSelectSpot={(s) => setSelected({ lat: s.lat, lon: s.lon, name: s.name })}
+        onSelectSpot={(s) => setSelected({ lat: s.lat, lon: s.lon, name: s.name, country: s.country })}
         onSelectAirport={() => {}}
         recenterKey={recenterKey}
         bottomInset={selected ? 220 : 0}
@@ -85,7 +101,7 @@ export default function MapScreen() {
         <Pressable
           onPress={() => router.push('/location')}
           accessibilityRole="button"
-          accessibilityLabel="Escolher local"
+          accessibilityLabel={t('Escolher local')}
           style={({ pressed }) => ({
             flex: 1,
             flexDirection: 'row',
@@ -119,12 +135,12 @@ export default function MapScreen() {
           )}
           <View style={{ flex: 1 }}>
             <T v="headline" numberOfLines={1}>
-              {location?.name ?? 'Escolha um local'}
+              {location?.name ?? t('Escolha um local')}
             </T>
             <T v="footnote" tone="secondary" num numberOfLines={1}>
               {here.data
-                ? `${fmtSpeed(here.data.now.windAlt, unit)} ${cardinal(here.data.now.dirAlt)} · raj. ${fmtSpeed(here.data.now.gustAlt, unit)}`
-                : 'Carregando condições…'}
+                ? `${fmtSpeed(here.data.now.windAlt, unit)} ${cardinal(here.data.now.dirAlt)} · ${t('raj.')} ${fmtSpeed(here.data.now.gustAlt, unit)}`
+                : t('Carregando condições…')}
             </T>
           </View>
           {here.data ? (
@@ -139,7 +155,7 @@ export default function MapScreen() {
       <View style={{ position: 'absolute', right: space.lg, top: insets.top + 96, gap: space.sm }}>
         <MapButton
           icon="location"
-          label="Centralizar"
+          label={t('Centralizar')}
           onPress={() => {
             Haptics.selectionAsync().catch(() => {});
             setRecenterKey((k) => k + 1);
@@ -147,7 +163,7 @@ export default function MapScreen() {
         />
         <MapButton
           icon="layers"
-          label={showZones ? 'Ocultar zonas' : 'Mostrar zonas'}
+          label={showZones ? t('Ocultar zonas') : t('Mostrar zonas')}
           active={showZones}
           onPress={() => {
             Haptics.selectionAsync().catch(() => {});
@@ -160,7 +176,7 @@ export default function MapScreen() {
         <View style={{ position: 'absolute', left: 0, right: 0, bottom: bottomOffset, alignItems: 'center' }} pointerEvents="none">
           <View style={{ backgroundColor: c.cardRaised, borderRadius: radius.pill, paddingHorizontal: space.md, paddingVertical: 6, boxShadow: floatingShadow }}>
             <T v="footnote" tone="secondary">
-              Mantenha pressionado para ver um ponto
+              {t('Mantenha pressionado para ver um ponto')}
             </T>
           </View>
         </View>
@@ -185,13 +201,13 @@ export default function MapScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
             <View style={{ flex: 1, gap: 4 }}>
               <T v="headline" numberOfLines={1}>
-                {selected.name ?? 'Ponto selecionado'}
+                {selected.name ?? t('Ponto selecionado')}
               </T>
               <T v="footnote" tone="secondary" num selectable>
                 {selected.lat.toFixed(5)}, {selected.lon.toFixed(5)}
               </T>
             </View>
-            <Pressable hitSlop={12} onPress={() => setSelected(null)} accessibilityLabel="Fechar">
+            <Pressable hitSlop={12} onPress={() => setSelected(null)} accessibilityLabel={t('Fechar')}>
               <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: c.fill, alignItems: 'center', justifyContent: 'center' }}>
                 <Icon name="close" size={13} color={c.secondary} weight="bold" />
               </View>
@@ -201,12 +217,12 @@ export default function MapScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' }}>
               <StatusPill v={point.data.now.verdict} label={`${point.data.now.score} · ${verdictLabel[point.data.now.verdict]}`} />
               <T v="footnote" tone="secondary" num>
-                {fmtSpeed(point.data.now.windAlt, unit)} · raj. {fmtSpeed(point.data.now.gustAlt, unit)}
+                {fmtSpeed(point.data.now.windAlt, unit)} · {t('raj.')} {fmtSpeed(point.data.now.gustAlt, unit)}
               </T>
             </View>
           ) : point.error ? (
             <T v="footnote" tone="nogo">
-              Não foi possível carregar a previsão deste ponto.
+              {t('Não foi possível carregar a previsão deste ponto.')}
             </T>
           ) : (
             <ActivityIndicator color={c.secondary} style={{ alignSelf: 'flex-start' }} />
@@ -219,17 +235,18 @@ export default function MapScreen() {
                 color={pointAirspace.status === 'critical' ? c.nogo : pointAirspace.status === 'caution' ? c.caution : c.secondary}
               />
               <T v="footnote" tone="secondary" style={{ flex: 1 }} numberOfLines={2}>
+                {t('{icao} a {dist}', { icao: pointAirspace.nearest.icao, dist: fmtDistance(pointAirspace.nearest.distance) })}
                 {pointAirspace.status === 'critical'
-                  ? `${pointAirspace.nearest.icao} a ${fmtDistance(pointAirspace.nearest.distance)} · abaixo do afastamento do DECEA`
+                  ? ` · ${t('abaixo do afastamento do DECEA')}`
                   : pointAirspace.status === 'caution'
-                    ? `${pointAirspace.nearest.icao} a ${fmtDistance(pointAirspace.nearest.distance)} · só até 30 m (DECEA)`
-                    : `${pointAirspace.nearest.icao} a ${fmtDistance(pointAirspace.nearest.distance)}`}
+                    ? ` · ${pointRegion === 'BR' ? t('só até 30 m (DECEA)') : t('aeroporto próximo: confira as regras locais')}`
+                    : ''}
               </T>
             </View>
           ) : null}
           <View style={{ flexDirection: 'row', gap: space.sm }}>
-            <Button title="Salvar" icon="bookmarkAdd" kind="secondary" onPress={saveSelected} style={{ flex: 1 }} />
-            <Button title="Usar local" icon="pin" onPress={useSelected} style={{ flex: 1 }} />
+            <Button title={t('Salvar')} icon="bookmarkAdd" kind="secondary" onPress={saveSelected} style={{ flex: 1 }} />
+            <Button title={t('Usar local')} icon="pin" onPress={useSelected} style={{ flex: 1 }} />
           </View>
         </Animated.View>
       ) : null}

@@ -1,3 +1,4 @@
+import { fmtNum, t } from '@/i18n';
 import type { Verdict } from '@/theme/tokens';
 
 import type { DroneProfile } from './drones';
@@ -91,7 +92,7 @@ export function cloudBaseMeters(h: Hour) {
   return Math.max(0, (h.temp - h.dewPoint) * 125);
 }
 
-export type AirspaceInput = { status: 'clear' | 'caution' | 'critical'; icao?: string; distanceM?: number };
+export type AirspaceInput = { status: 'clear' | 'caution' | 'critical'; icao?: string; distanceM?: number; region?: 'BR' | 'INTL' };
 
 /** Satélites visíveis (céu aberto, acima da máscara) e geometria estimada. */
 export type GnssInput = { visible: number; gps: number; pdop: number };
@@ -160,10 +161,10 @@ export function scoreHour(
   const sw: Verdict = rw >= 0.9 ? 'nogo' : rw >= 0.6 ? 'caution' : 'go';
   factors.push({
     id: 'wind',
-    label: 'Vento',
+    label: t('Vento'),
     status: sw,
     penalty: pw,
-    detail: `${fmtWind(w.speed)} a ${altitude} m · ${Math.round(rw * 100)}% do limite`,
+    detail: t('{wind} a {alt} m · {pct}% do limite', { wind: fmtWind(w.speed), alt: altitude, pct: Math.round(rw * 100) }),
   });
 
   // Rajadas: picos de poucos segundos toleram um pouco acima do limite sustentado (×1,2);
@@ -180,10 +181,12 @@ export function scoreHour(
   const sg: Verdict = rg >= 1 ? 'nogo' : rg >= 0.75 ? 'caution' : 'go';
   factors.push({
     id: 'gust',
-    label: 'Rajadas',
+    label: t('Rajadas'),
     status: sg,
     penalty: pg,
-    detail: `${fmtWind(gustAlt)} · variação de ${fmtWind(gustExcess)}${obsGust != null ? ` · medida em ${obs!.icao}` : ''}`,
+    detail:
+      t('{gust} · variação de {delta}', { gust: fmtWind(gustAlt), delta: fmtWind(gustExcess) }) +
+      (obsGust != null ? ` · ${t('medida em {icao}', { icao: obs!.icao })}` : ''),
   });
 
   // Trovoada / instabilidade. CAPE sozinho não é trovoada: no Brasil ele passa de 1500 em muitas
@@ -196,16 +199,16 @@ export function scoreHour(
   if (storm || showers || unstable) {
     factors.push({
       id: 'storm',
-      label: 'Instabilidade',
+      label: t('Instabilidade'),
       status: storm ? 'nogo' : 'caution',
       penalty: storm ? 80 : showers ? 12 : 4,
       detail: thunderObs
-        ? `Trovoada observada em ${obs!.icao}`
+        ? t('Trovoada observada em {icao}', { icao: obs!.icao })
         : storm
-          ? 'Risco de trovoada e descargas'
+          ? t('Risco de trovoada e descargas')
           : showers
-            ? `Pancadas isoladas possíveis (CAPE ${Math.round(h.cape)})`
-            : `Ar instável, térmicas fortes (CAPE ${Math.round(h.cape)})`,
+            ? t('Pancadas isoladas possíveis (CAPE {cape})', { cape: Math.round(h.cape) })
+            : t('Ar instável, térmicas fortes (CAPE {cape})', { cape: Math.round(h.cape) }),
     });
   }
 
@@ -238,14 +241,14 @@ export function scoreHour(
   }
   factors.push({
     id: 'precip',
-    label: 'Chuva',
+    label: t('Chuva'),
     status: sp,
     penalty: pp,
     detail: obs?.rain
-      ? `Chovendo em ${obs.icao}`
+      ? t('Chovendo em {icao}', { icao: obs.icao })
       : raining
-        ? `${h.precip.toFixed(1)} mm/h previstos · ${Math.round(h.precipProb)}% de chance`
-        : `${Math.round(h.precipProb)}% de chance`,
+        ? t('{mm} mm/h previstos · {pct}% de chance', { mm: fmtNum(h.precip, 1), pct: Math.round(h.precipProb) })
+        : t('{pct}% de chance', { pct: Math.round(h.precipProb) }),
   });
 
   // Visibilidade (VLOS). A visibilidade do modelo é o campo menos confiável da previsão:
@@ -268,20 +271,20 @@ export function scoreHour(
   const visSrc = obs?.visibilityM != null ? ` · ${obs.icao}` : '';
   factors.push({
     id: 'visibility',
-    label: 'Visibilidade',
+    label: t('Visibilidade'),
     status: sv,
     penalty: pv,
     detail: fog
       ? obs
-        ? `Nevoeiro em ${obs.icao}`
-        : 'Nevoeiro previsto'
+        ? t('Nevoeiro em {icao}', { icao: obs.icao })
+        : t('Nevoeiro previsto')
       : Number.isNaN(visM)
-        ? 'Sem dado do modelo'
+        ? t('Sem dado do modelo')
         : visM >= 20000
-          ? 'Acima de 20 km'
+          ? t('Acima de 20 km')
           : visM >= 10000 && obs?.visibilityM != null
-            ? `10 km ou mais${visSrc}`
-            : `${(visM / 1000).toFixed(1).replace('.', ',')} km${visSrc}`,
+            ? t('10 km ou mais') + visSrc
+            : `${fmtNum(visM / 1000, 1)} km${visSrc}`,
   });
 
   // Base de nuvens vs altitude planejada
@@ -296,10 +299,10 @@ export function scoreHour(
   }
   factors.push({
     id: 'cloudbase',
-    label: 'Base de nuvens',
+    label: t('Base de nuvens'),
     status: sc,
     penalty: pc,
-    detail: `~${Math.round(base / 10) * 10} m · nuvens baixas ${Math.round(h.cloudLow)}%`,
+    detail: t('~{base} m · nuvens baixas {pct}%', { base: Math.round(base / 10) * 10, pct: Math.round(h.cloudLow) }),
   });
 
   // Temperatura (bateria e eletrônica)
@@ -317,15 +320,12 @@ export function scoreHour(
   }
   factors.push({
     id: 'temperature',
-    label: 'Temperatura',
+    label: t('Temperatura'),
     status: st,
     penalty: pt,
     detail:
-      h.temp < 10
-        ? `${Math.round(h.temp)}° · aqueça as baterias`
-        : h.temp > 33
-          ? `${Math.round(h.temp)}° · risco de superaquecimento`
-          : `${Math.round(h.temp)}° · faixa ideal`,
+      `${Math.round(h.temp)}° · ` +
+      (h.temp < 10 ? t('aqueça as baterias') : h.temp > 33 ? t('risco de superaquecimento') : t('faixa ideal')),
   });
 
   // Kp — atividade geomagnética
@@ -343,10 +343,10 @@ export function scoreHour(
   const sk: Verdict = kp >= 8 ? 'nogo' : kp >= 5 ? 'caution' : 'go';
   factors.push({
     id: 'kp',
-    label: 'GNSS / Kp',
+    label: t('GNSS / Kp'),
     status: sk,
     penalty: pk,
-    detail: `Kp ${kp.toFixed(1).replace('.', ',')} · ${kpLabel(kp)}`,
+    detail: `Kp ${fmtNum(kp, 1)} · ${kpLabel(kp)}`,
   });
 
   // Satélites GNSS disponíveis (contagem e geometria em céu aberto)
@@ -364,10 +364,10 @@ export function scoreHour(
     }
     factors.push({
       id: 'satellites',
-      label: 'Satélites',
+      label: t('Satélites'),
       status: sn,
       penalty: pn,
-      detail: `${gnss.visible} visíveis (${gnss.gps} GPS) · PDOP ${Number.isFinite(gnss.pdop) ? gnss.pdop.toFixed(1).replace('.', ',') : '—'}`,
+      detail: t('{n} visíveis ({gps} GPS) · PDOP {pdop}', { n: gnss.visible, gps: gnss.gps, pdop: fmtNum(gnss.pdop, 1) }),
     });
   }
 
@@ -377,7 +377,7 @@ export function scoreHour(
     let si: Verdict = 'go';
     const parts: string[] = [];
     if (space.scint) {
-      parts.push(`Cintilação ${space.scint.level} (S4 ${space.scint.s4.toFixed(2).replace('.', ',')})`);
+      parts.push(t('Cintilação {level} (S4 {s4})', { level: scintLabel[space.scint.level], s4: fmtNum(space.scint.s4, 2) }));
       if (space.scint.level === 'forte') {
         pi += 14;
         si = 'caution';
@@ -393,33 +393,40 @@ export function scoreHour(
       pi += 6;
       si = 'caution';
     }
-    if (space.r > 0) parts.push(`rádio R${space.r}`);
-    if (space.s > 0) parts.push(`radiação S${space.s}`);
-    if (parts.length === 0) parts.push('Sem alertas da NOAA');
-    factors.push({ id: 'ionosphere', label: 'Ionosfera', status: si, penalty: pi, detail: parts.join(' · ') });
+    if (space.r > 0) parts.push(t('rádio R{n}', { n: space.r }));
+    if (space.s > 0) parts.push(t('radiação S{n}', { n: space.s }));
+    if (parts.length === 0) parts.push(t('Sem alertas da NOAA'));
+    factors.push({ id: 'ionosphere', label: t('Ionosfera'), status: si, penalty: pi, detail: parts.join(' · ') });
   }
 
   // Luz do dia
   factors.push({
     id: 'daylight',
-    label: 'Luz do dia',
+    label: t('Luz do dia'),
     status: h.isDay ? 'go' : 'caution',
     penalty: h.isDay ? 0 : 15,
-    detail: h.isDay ? 'Dia claro' : 'Noite · exige luzes e autorização',
+    detail: h.isDay ? t('Dia claro') : t('Noite · exige luzes e autorização'),
   });
 
-  // Espaço aéreo: afastamento mínimo de aeródromos cadastrados (ICA 100-40 / DECEA)
+  // Espaço aéreo: no Brasil, afastamento mínimo de aeródromos cadastrados (ICA 100-40 / DECEA).
+  // Fora do Brasil não há regra única: aeroporto a menos de 5 NM vira cautela, nunca proibição.
   if (airspace && airspace.status !== 'clear') {
-    const km = airspace.distanceM != null ? ` a ${(airspace.distanceM / 1000).toFixed(1).replace('.', ',')} km` : '';
+    const km = airspace.distanceM != null ? ` ${t('a {km} km', { km: fmtNum(airspace.distanceM / 1000, 1) })}` : '';
+    const intl = airspace.region === 'INTL';
     factors.push({
       id: 'airspace',
-      label: 'Espaço aéreo',
+      label: t('Espaço aéreo'),
       status: airspace.status === 'critical' ? 'nogo' : 'caution',
-      penalty: airspace.status === 'critical' ? 40 : 6,
+      penalty: airspace.status === 'critical' ? 40 : intl ? 10 : 6,
       detail:
-        airspace.status === 'critical'
-          ? `${airspace.icao}${km} · abaixo do afastamento do DECEA para ${altitude <= 30.48 ? 'até 30 m (5,6 km)' : 'acima de 30 m (9,3 km)'}`
-          : `${airspace.icao}${km} · voo permitido só até 30 m`,
+        `${airspace.icao}${km} · ` +
+        (intl
+          ? t('aeroporto próximo: confira as regras locais')
+          : airspace.status === 'critical'
+            ? altitude <= 30.48
+              ? t('abaixo do afastamento do DECEA para até 30 m (5,6 km)')
+              : t('abaixo do afastamento do DECEA para acima de 30 m (9,3 km)')
+            : t('voo permitido só até 30 m')),
     });
   }
 
@@ -449,22 +456,29 @@ export function scoreHour(
 }
 
 export function kpLabel(kp: number) {
-  if (kp >= 7) return 'tempestade forte';
-  if (kp >= 5) return 'tempestade geomagnética';
-  if (kp >= 4) return 'atividade elevada';
-  return 'GPS estável';
+  if (kp >= 7) return t('tempestade forte');
+  if (kp >= 5) return t('tempestade geomagnética');
+  if (kp >= 4) return t('atividade elevada');
+  return t('GPS estável');
 }
 
+/** Rótulo do nível de cintilação do INPE no idioma do app. */
+export const scintLabel: Record<'fraca' | 'moderada' | 'forte', string> = {
+  fraca: t('fraca'),
+  moderada: t('moderada'),
+  forte: t('forte'),
+};
+
 export const verdictLabel: Record<Verdict, string> = {
-  go: 'Bom para voar',
-  caution: 'Voe com cautela',
-  nogo: 'Não recomendado',
+  go: t('Bom para voar'),
+  caution: t('Voe com cautela'),
+  nogo: t('Não recomendado'),
 };
 
 export const verdictShort: Record<Verdict, string> = {
-  go: 'Bom',
-  caution: 'Cautela',
-  nogo: 'Evite',
+  go: t('Bom'),
+  caution: t('Cautela'),
+  nogo: t('Evite'),
 };
 
 /* ------------------------------------------------------------------ Janelas */

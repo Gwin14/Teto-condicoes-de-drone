@@ -22,6 +22,8 @@ export type ConditionsWidgetProps = {
   updated: string;
   drone: string;
   hours: { t: string; s: number; v: WidgetVerdict; w: string }[];
+  /** Rótulos já traduzidos (o runtime do widget não tem i18n). Ausente em timelines antigas. */
+  l?: { gust: string; next: string; windAt: string; gusts: string; rain: string; temp: string; kp: string };
 };
 
 export type FlightActivityProps = {
@@ -38,6 +40,8 @@ export type FlightActivityProps = {
   gust: string;
   unit: string;
   dir: string;
+  /** Rótulos já traduzidos; `battery` e `landBy` já trazem o horário. */
+  l?: { inFlight: string; stale: string; wind: string; windCap: string; gust: string; battery: string; landBy: string };
 };
 
 export const EMPTY_WIDGET: ConditionsWidgetProps = {

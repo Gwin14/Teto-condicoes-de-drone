@@ -1,12 +1,13 @@
 import { View } from 'react-native';
 
 import { Card, Skeleton } from '@/components/ui';
+import { t } from '@/i18n';
 import { space } from '@/theme/tokens';
 
 /** Skeleton no formato exato da tela final (hero, faixa horária, fatores). */
 export function NowSkeleton() {
   return (
-    <View style={{ gap: space.lg }} accessibilityLabel="Carregando condições">
+    <View style={{ gap: space.lg }} accessibilityLabel={t('Carregando condições')}>
       <Skeleton style={{ height: 14, width: '60%' }} />
       <Card style={{ gap: space.lg }}>
         <View style={{ flexDirection: 'row', gap: space.lg, alignItems: 'center' }}>

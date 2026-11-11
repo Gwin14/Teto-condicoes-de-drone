@@ -1,3 +1,5 @@
+import { lang, localeTag, t } from '@/i18n';
+
 export type SpeedUnit = 'kmh' | 'ms' | 'kt' | 'mph';
 export type TempUnit = 'c' | 'f';
 
@@ -62,37 +64,37 @@ export function fmtVisibility(m: number | null | undefined) {
 }
 
 export function trim(v: number, digits: number) {
-  return Number(v.toFixed(digits)).toLocaleString('pt-BR', { maximumFractionDigits: digits });
+  return Number(v.toFixed(digits)).toLocaleString(localeTag, { maximumFractionDigits: digits });
 }
 
-const CARDINALS = ['N', 'NNE', 'NE', 'ENE', 'L', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'];
-const CARDINAL_NAMES: Record<string, string> = {
-  N: 'norte',
-  NE: 'nordeste',
-  L: 'leste',
-  SE: 'sudeste',
-  S: 'sul',
-  SO: 'sudoeste',
-  O: 'oeste',
-  NO: 'noroeste',
+/** Rosa dos ventos de 16 pontos por idioma (pt usa L/O; es usa O para oeste). */
+const CARDINALS: Record<typeof lang, string[]> = {
+  pt: ['N', 'NNE', 'NE', 'ENE', 'L', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'],
+  en: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'],
+  es: ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'],
 };
+const NAMES8 = [t('norte'), t('nordeste'), t('leste'), t('sudeste'), t('sul'), t('sudoeste'), t('oeste'), t('noroeste')];
+
+/** Letras dos 4 pontos cardeais (N, L/E, S, O/W) para bússola e carta do céu. */
+export const CARDINAL4 = [CARDINALS[lang][0], CARDINALS[lang][4], CARDINALS[lang][8], CARDINALS[lang][12]] as const;
 
 export function cardinal(deg: number | null | undefined) {
   if (deg == null || Number.isNaN(deg)) return '—';
-  return CARDINALS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+  return CARDINALS[lang][Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
 }
 
 export function cardinalName(deg: number) {
-  const c8 = ['N', 'NE', 'L', 'SE', 'S', 'SO', 'O', 'NO'][Math.round((((deg % 360) + 360) % 360) / 45) % 8];
-  return CARDINAL_NAMES[c8];
+  return NAMES8[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
 }
 
 export function fmtTime(d: Date) {
-  return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' });
 }
 
+/** Rótulo curto de hora: "14h" em pt/es; "14:00" em inglês ("2 PM" nos EUA). */
 export function fmtHour(d: Date) {
-  return `${String(d.getHours()).padStart(2, '0')}h`;
+  if (lang !== 'en') return `${String(d.getHours()).padStart(2, '0')}h`;
+  return d.toLocaleTimeString(localeTag, { hour: 'numeric' }).replace(/\s/g, '\u2009');
 }
 
 export function fmtWeekday(d: Date, today = new Date()) {
@@ -101,14 +103,14 @@ export function fmtWeekday(d: Date, today = new Date()) {
   const b = new Date(today);
   b.setHours(0, 0, 0, 0);
   const diff = Math.round((a.getTime() - b.getTime()) / 86400000);
-  if (diff === 0) return 'Hoje';
-  if (diff === 1) return 'Amanhã';
-  const s = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+  if (diff === 0) return t('Hoje');
+  if (diff === 1) return t('Amanhã');
+  const s = d.toLocaleDateString(localeTag, { weekday: 'long' });
   return s.charAt(0).toUpperCase() + s.slice(1).replace('-feira', '');
 }
 
 export function fmtShortDate(d: Date) {
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
+  return d.toLocaleDateString(localeTag, { day: '2-digit', month: 'short' }).replace('.', '');
 }
 
 export function fmtDuration(ms: number) {
@@ -129,11 +131,11 @@ export function fmtMinutes(min: number) {
 
 export function fmtRelative(ts: number, now = Date.now()) {
   const diff = Math.round((now - ts) / 60000);
-  if (diff < 1) return 'agora';
-  if (diff < 60) return `há ${diff} min`;
+  if (diff < 1) return t('agora');
+  if (diff < 60) return t('há {n} min', { n: diff });
   const h = Math.round(diff / 60);
-  if (h < 24) return `há ${h} h`;
-  return new Date(ts).toLocaleDateString('pt-BR');
+  if (h < 24) return t('há {n} h', { n: h });
+  return new Date(ts).toLocaleDateString(localeTag);
 }
 
 export function clamp(v: number, a: number, b: number) {

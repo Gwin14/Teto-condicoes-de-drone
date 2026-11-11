@@ -1,5 +1,7 @@
 import { Alert } from 'react-native';
 
+import { t } from '@/i18n';
+
 /** Confirmação nativa (Alert) com fallback para a web, onde Alert não existe. */
 export function confirmAction(opts: {
   title: string;
@@ -14,7 +16,7 @@ export function confirmAction(opts: {
     return;
   }
   Alert.alert(opts.title, opts.message, [
-    { text: opts.cancel ?? 'Cancelar', style: 'cancel' },
+    { text: opts.cancel ?? t('Cancelar'), style: 'cancel' },
     { text: opts.confirm, style: opts.destructive ? 'destructive' : 'default', onPress: opts.onConfirm },
   ]);
 }

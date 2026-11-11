@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icon';
 import { ScoreRing } from '@/components/ScoreRing';
 import { Card, PressableScale, StatusPill, T } from '@/components/ui';
 import type { Conditions } from '@/hooks/useConditions';
+import { t } from '@/i18n';
 import type { DroneProfile } from '@/lib/drones';
 import { cardinal, fmtSpeed, type SpeedUnit } from '@/lib/format';
 import { verdictLabel } from '@/lib/scoring';
@@ -18,7 +19,7 @@ export function HeroCard({ data, drone, altitude, unit }: { data: Conditions; dr
 
   const summary =
     worst.length === 0
-      ? 'Todos os fatores dentro dos limites do seu drone.'
+      ? t('Todos os fatores dentro dos limites do seu drone.')
       : worst.map((f) => `${f.label}: ${f.detail}`).join(' · ');
 
   return (
@@ -36,16 +37,16 @@ export function HeroCard({ data, drone, altitude, unit }: { data: Conditions; dr
       </View>
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
-        <Stat icon="wind" label="Vento" value={fmtSpeed(n.windAlt, unit)} sub={`${cardinal(n.dirAlt)} · ${altitude} m`} />
-        <Stat icon="gust" label="Rajadas" value={fmtSpeed(n.gustAlt, unit)} sub={`+${fmtSpeed(Math.max(0, n.gustAlt - n.windAlt), unit)}`} />
-        <Stat icon="battery" label="Autonomia" value={`${Math.round(data.usable)} min`} sub="útil" />
+        <Stat icon="wind" label={t('Vento')} value={fmtSpeed(n.windAlt, unit)} sub={`${cardinal(n.dirAlt)} · ${altitude} m`} />
+        <Stat icon="gust" label={t('Rajadas')} value={fmtSpeed(n.gustAlt, unit)} sub={`+${fmtSpeed(Math.max(0, n.gustAlt - n.windAlt), unit)}`} />
+        <Stat icon="battery" label={t('Autonomia')} value={`${Math.round(data.usable)} min`} sub={t('útil')} />
       </View>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' }}>
         <PressableScale
           haptic
           onPress={() => router.push('/drone')}
-          accessibilityLabel={`Drone selecionado: ${drone.brand} ${drone.name}. Toque para trocar.`}
+          accessibilityLabel={t('Drone selecionado: {drone}. Toque para trocar.', { drone: `${drone.brand} ${drone.name}` })}
           style={{
             flexDirection: 'row',
             alignItems: 'center',
@@ -64,10 +65,10 @@ export function HeroCard({ data, drone, altitude, unit }: { data: Conditions; dr
         {zone !== 'clear' && data.airspace.nearest ? (
           <StatusPill
             v={zone === 'critical' ? 'nogo' : 'caution'}
-            label={`${zone === 'critical' ? 'Zona de aeródromo' : 'Perto de'} ${data.airspace.nearest.icao}`}
+            label={zone === 'critical' ? t('Zona de aeródromo {icao}', { icao: data.airspace.nearest.icao }) : t('Perto de {icao}', { icao: data.airspace.nearest.icao })}
           />
         ) : (
-          <StatusPill v="go" label="Sem aeródromo próximo" />
+          <StatusPill v="go" label={t('Sem aeródromo próximo')} />
         )}
       </View>
     </Card>

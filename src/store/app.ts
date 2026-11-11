@@ -4,6 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { DEFAULT_DRONE_ID, type DroneProfile } from '@/lib/drones';
 import type { SpeedUnit, TempUnit } from '@/lib/format';
+import { deviceUsesFahrenheit, deviceUsesImperial } from '@/i18n';
 import type { Verdict } from '@/theme/tokens';
 
 export type SavedSpot = {
@@ -12,12 +13,13 @@ export type SavedSpot = {
   detail?: string;
   lat: number;
   lon: number;
+  country?: string;
   createdAt: number;
 };
 
 export type LocationChoice =
   | { kind: 'gps' }
-  | { kind: 'place'; name: string; detail?: string; lat: number; lon: number };
+  | { kind: 'place'; name: string; detail?: string; lat: number; lon: number; country?: string };
 
 export type FlightSession = {
   id: string;
@@ -43,6 +45,8 @@ export type FlightLog = FlightSession & {
 type State = {
   /** Concluiu (ou pulou) o onboarding. Porta de mão única. */
   onboarded: boolean;
+  /** Teto Pro ativo (cache do entitlement `pro` do RevenueCat). */
+  pro: boolean;
   speedUnit: SpeedUnit;
   tempUnit: TempUnit;
   droneId: string;
@@ -82,8 +86,10 @@ export const useApp = create<State & Actions>()(
   persist(
     (set, get) => ({
       onboarded: false,
-      speedUnit: 'kmh',
-      tempUnit: 'c',
+      pro: false,
+      // Primeira abertura: unidades do aparelho (EUA → mph/°F). Altitude e temperaturas do drone seguem em m e °C.
+      speedUnit: deviceUsesImperial ? 'mph' : 'kmh',
+      tempUnit: deviceUsesFahrenheit ? 'f' : 'c',
       droneId: DEFAULT_DRONE_ID,
       customDrone: null,
       altitude: 100,

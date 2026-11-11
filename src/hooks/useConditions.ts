@@ -5,10 +5,11 @@ import { airspaceAt, type Airport, haversine, nearbyAirports, rowsToAirports, SN
 import { ANAC_PRIVATE_URL, ANAC_PUBLIC_URL, decodeLatin1, parseAnacCsv } from '@/lib/anac';
 import { findDrone } from '@/lib/drones';
 import { fmtSpeed } from '@/lib/format';
+import { type Region, regionAt } from '@/lib/region';
 import { densityAltitude, findWindows, scoreHour, usableFlightMinutes } from '@/lib/scoring';
 import { fetchAllConstellations, snapshot } from '@/lib/gnss';
 import { fetchS4Map, fetchSpaceWeather, isS4Fresh, s4At } from '@/lib/spaceWeather';
-import { fetchForecast, fetchKp, fetchMetar, fetchObservationsNear, kpAt } from '@/lib/weather';
+import { fetchAirportsNear, fetchForecast, fetchKp, fetchMetar, fetchObservationsNear, kpAt } from '@/lib/weather';
 import { useApp } from '@/store/app';
 
 export function useForecast(lat?: number, lon?: number) {
@@ -105,25 +106,39 @@ async function fetchAnacAerodromes(signal?: AbortSignal): Promise<Airport[]> {
   const [pub, priv] = await Promise.all([get(ANAC_PUBLIC_URL, 'publico'), get(ANAC_PRIVATE_URL, 'privado')]);
   const codes = new Set<string>();
   const list = rowsToAirports([...pub, ...priv]).filter((a) => !codes.has(a.icao) && codes.add(a.icao));
-  if (list.length < 1000) throw new Error('Cadastro da ANAC incompleto');
+  if (list.length < 1000) throw new Error('ANAC: incomplete registry');
   // Mantém as bases que só existem no aviationweather.gov (militares).
   return [...list, ...SNAPSHOT_AIRPORTS.filter((a) => !codes.has(a.icao))];
 }
 
 /**
- * Aeródromos cadastrados. Começa pelo snapshot oficial embutido e, no app nativo,
- * troca pelo cadastro atual baixado da ANAC (a web não pode: o servidor não libera CORS).
+ * Aeródromos do regime do ponto.
+ * - Brasil: começa pelo snapshot oficial embutido e, no app nativo, troca pelo cadastro atual
+ *   baixado da ANAC (a web não pode: o servidor não libera CORS).
+ * - Fora do Brasil: aeroportos num raio de 160 km pelo aviationweather.gov (só no app nativo).
  */
-export function useAerodromes(): Airport[] {
-  const q = useQuery({
+export function useAerodromes(lat?: number, lon?: number, country?: string): { region: Region; list: Airport[] } {
+  const region: Region = lat != null && lon != null ? regionAt(lat, lon, country) : 'BR';
+  const anac = useQuery({
     queryKey: ['anac-aerodromes'],
     queryFn: ({ signal }) => fetchAnacAerodromes(signal),
-    enabled: process.env.EXPO_OS !== 'web',
+    enabled: region === 'BR' && process.env.EXPO_OS !== 'web',
     staleTime: 7 * 24 * 3600_000,
     gcTime: 7 * 24 * 3600_000,
     retry: 1,
   });
-  return q.data ?? SNAPSHOT_AIRPORTS;
+  // Grade de 0,5° para reaproveitar a consulta enquanto o usuário se move pela região.
+  const gLat = lat != null ? Math.round(lat * 2) / 2 : undefined;
+  const gLon = lon != null ? Math.round(lon * 2) / 2 : undefined;
+  const intl = useQuery({
+    queryKey: ['airports-near', gLat, gLon],
+    queryFn: ({ signal }) => fetchAirportsNear(gLat!, gLon!, 160, signal),
+    enabled: region === 'INTL' && gLat != null && gLon != null && process.env.EXPO_OS !== 'web',
+    staleTime: 7 * 24 * 3600_000,
+    gcTime: 7 * 24 * 3600_000,
+    retry: 1,
+  });
+  return region === 'BR' ? { region, list: anac.data ?? SNAPSHOT_AIRPORTS } : { region, list: intl.data ?? [] };
 }
 
 export function useDrone() {
@@ -133,14 +148,14 @@ export function useDrone() {
 }
 
 /** Combina previsão + Kp + perfil de drone + altitude planejada em um quadro completo. */
-export function useConditions(lat?: number, lon?: number) {
+export function useConditions(lat?: number, lon?: number, country?: string) {
   const forecast = useForecast(lat, lon);
   const kp = useKp();
   const sats = useConstellations();
   const space = useSpaceWeather();
   const s4 = useScintillation();
   const metarNear = useObservations(lat, lon);
-  const aerodromes = useAerodromes();
+  const { region, list: aerodromes } = useAerodromes(lat, lon, country);
   const mask = useApp((s) => s.gnssMask);
   const drone = useDrone();
   const altitude = useApp((s) => s.altitude);
@@ -150,8 +165,8 @@ export function useConditions(lat?: number, lon?: number) {
     const f = forecast.data;
     if (!f) return null;
     const fmt = (v: number) => fmtSpeed(v, unit);
-    const airspace = airspaceAt(aerodromes, f.lat, f.lon, altitude);
-    const air = { status: airspace.status, icao: airspace.nearest?.icao, distanceM: airspace.nearest?.distance };
+    const airspace = airspaceAt(aerodromes, f.lat, f.lon, altitude, region);
+    const air = { status: airspace.status, icao: airspace.nearest?.icao, distanceM: airspace.nearest?.distance, region };
     const elements = sats.data?.sats;
     const sw = space.data;
     // Satélites e ionosfera por hora. Elementos orbitais valem bem por ~3 dias.
@@ -206,11 +221,11 @@ export function useConditions(lat?: number, lon?: number) {
       return scoreHour(h, drone, altitude, kpv, fmt, extraAt(h.time));
     });
     const windows = findWindows(weatherOnly);
-    const airports = nearbyAirports(aerodromes, f.lat, f.lon, 60, altitude).slice(0, 5);
+    const airports = nearbyAirports(aerodromes, f.lat, f.lon, 60, altitude, region).slice(0, 5);
     const usable = usableFlightMinutes(drone, now.windAlt, f.current.temp);
     const da = densityAltitude(f.current.pressure, f.current.temp);
-    return { forecast: f, now, hours, windows, airspace, airports, usable, densityAlt: da };
-  }, [forecast.data, kp.data, sats.data, space.data, s4.data, metarNear.data, aerodromes, mask, drone, altitude, unit]);
+    return { forecast: f, now, hours, windows, airspace, airports, usable, densityAlt: da, region };
+  }, [forecast.data, kp.data, sats.data, space.data, s4.data, metarNear.data, aerodromes, region, mask, drone, altitude, unit]);
 
   return {
     data,

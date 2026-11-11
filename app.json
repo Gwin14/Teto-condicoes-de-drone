@@ -13,7 +13,9 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "CFBundleDevelopmentRegion": "pt-BR"
+        "CFBundleDevelopmentRegion": "pt-BR",
+        "CFBundleAllowMixedLocalizations": true,
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -67,7 +69,11 @@
               "displayName": "Condições de voo",
               "description": "Score de voo, vento e a próxima janela ideal no lugar onde você voa.",
               "ios": {
-                "supportedFamilies": ["systemSmall", "systemMedium", "systemLarge"],
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "systemLarge"
+                ],
                 "contentMarginsDisabled": true
               },
               "android": {
@@ -83,18 +89,44 @@
               "displayName": "Voo na tela bloqueada",
               "description": "Score e vento direto na tela bloqueada.",
               "ios": {
-                "supportedFamilies": ["accessoryCircular", "accessoryRectangular", "accessoryInline"]
+                "supportedFamilies": [
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ]
               },
               "android": null
             }
           ]
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "pt-BR",
+              "en",
+              "es"
+            ],
+            "android": [
+              "pt-BR",
+              "en",
+              "es"
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "locales": {
+      "pt-BR": "./locales/pt-BR.json",
+      "en": "./locales/en.json",
+      "es": "./locales/es.json"
     }
   }
 }

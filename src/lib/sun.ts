@@ -2,6 +2,8 @@
  * Posição do Sol e horários (hora dourada, azul, crepúsculo civil).
  * Baseado nas fórmulas do NOAA / algoritmo clássico do SunCalc.
  */
+import { t } from '@/i18n';
+
 const rad = Math.PI / 180;
 const dayMs = 86400000;
 const J1970 = 2440588;
@@ -114,8 +116,8 @@ export function lightPhase(date: Date, lat: number, lon: number): LightPhase {
 }
 
 export const lightPhaseLabel: Record<LightPhase, string> = {
-  night: 'Noite',
-  blue: 'Hora azul',
-  golden: 'Hora dourada',
-  day: 'Luz do dia',
+  night: t('Noite'),
+  blue: t('Hora azul'),
+  golden: t('Hora dourada'),
+  day: t('Luz do dia'),
 };
