@@ -4,6 +4,7 @@ import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { Icon, type IconName } from '@/components/Icon';
 import { Card, T } from '@/components/ui';
 import { useActiveLocation } from '@/hooks/useLocation';
+import { fmtNum, t } from '@/i18n';
 import { cardinal, fmtTime } from '@/lib/format';
 import { lightPhase, lightPhaseLabel, sunPosition, sunTimes } from '@/lib/sun';
 import { space, useTheme } from '@/theme/tokens';
@@ -17,13 +18,13 @@ export default function SunScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: c.background, alignItems: 'center', justifyContent: 'center' }}>
         <T v="subhead" tone="secondary">
-          Escolha um local para planejar a luz.
+          {t('Escolha um local para planejar a luz.')}
         </T>
       </View>
     );
   }
   const now = new Date();
-  const t = sunTimes(now, location.lat, location.lon);
+  const st = sunTimes(now, location.lat, location.lon);
   const pos = sunPosition(now, location.lat, location.lon);
   const phase = lightPhase(now, location.lat, location.lon);
   const tomorrow = sunTimes(new Date(now.getTime() + 86400000), location.lat, location.lon);
@@ -45,12 +46,12 @@ export default function SunScreen() {
   const shadowLen = pos.elevation > 0 ? 1 / Math.tan((Math.max(pos.elevation, 2) * Math.PI) / 180) : null;
 
   const rows: { icon: IconName; label: string; value: string }[] = [
-    { icon: 'moon', label: 'Hora azul (manhã)', value: `${fmtTime(t.blueMorningStart)} – ${fmtTime(t.sunrise)}` },
-    { icon: 'sunrise', label: 'Hora dourada (manhã)', value: `${fmtTime(t.sunrise)} – ${fmtTime(t.goldenMorningEnd)}` },
-    { icon: 'sun', label: 'Meio-dia solar', value: fmtTime(t.solarNoon) },
-    { icon: 'camera', label: 'Hora dourada (tarde)', value: `${fmtTime(t.goldenEveningStart)} – ${fmtTime(t.sunset)}` },
-    { icon: 'moon', label: 'Hora azul (noite)', value: `${fmtTime(t.sunset)} – ${fmtTime(t.blueEveningEnd)}` },
-    { icon: 'sunrise', label: 'Amanhã nasce', value: fmtTime(tomorrow.sunrise) },
+    { icon: 'moon', label: t('Hora azul (manhã)'), value: `${fmtTime(st.blueMorningStart)} – ${fmtTime(st.sunrise)}` },
+    { icon: 'sunrise', label: t('Hora dourada (manhã)'), value: `${fmtTime(st.sunrise)} – ${fmtTime(st.goldenMorningEnd)}` },
+    { icon: 'sun', label: t('Meio-dia solar'), value: fmtTime(st.solarNoon) },
+    { icon: 'camera', label: t('Hora dourada (tarde)'), value: `${fmtTime(st.goldenEveningStart)} – ${fmtTime(st.sunset)}` },
+    { icon: 'moon', label: t('Hora azul (noite)'), value: `${fmtTime(st.sunset)} – ${fmtTime(st.blueEveningEnd)}` },
+    { icon: 'sunrise', label: t('Amanhã nasce'), value: fmtTime(tomorrow.sunrise) },
   ];
 
   return (
@@ -60,10 +61,10 @@ export default function SunScreen() {
       contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 80 }}>
       <Card style={{ gap: space.md }}>
         <T v="caption" tone="secondary" style={{ textTransform: 'uppercase', letterSpacing: 0.4, fontWeight: '600' }}>
-          Agora · {lightPhaseLabel[phase]}
+          {t('Agora')} · {lightPhaseLabel[phase]}
         </T>
         <T v="title2" num>
-          Elevação {Math.round(pos.elevation)}° · azimute {Math.round(pos.azimuth)}° {cardinal(pos.azimuth)}
+          {t('Elevação {el}° · azimute {az}° {dir}', { el: Math.round(pos.elevation), az: Math.round(pos.azimuth), dir: cardinal(pos.azimuth) })}
         </T>
         <Svg width={W} height={H}>
           <Line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke={c.separator} strokeWidth={1} />
@@ -104,11 +105,11 @@ export default function SunScreen() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <T v="headline">Sombras</T>
+        <T v="headline">{t('Sombras')}</T>
         <T v="subhead" tone="secondary">
           {shadowLen != null
-            ? `As sombras apontam para ${cardinal(shadowDir)} e medem ~${shadowLen.toFixed(1).replace('.', ',')}× a altura dos objetos. Para tomadas aéreas com sombras longas, voe na hora dourada.`
-            : 'O Sol está abaixo do horizonte. Lembre-se: voo noturno exige luzes e autorização específica.'}
+            ? t('As sombras apontam para {dir} e medem ~{len}× a altura dos objetos. Para tomadas aéreas com sombras longas, voe na hora dourada.', { dir: cardinal(shadowDir), len: fmtNum(shadowLen, 1) })
+            : t('O Sol está abaixo do horizonte. Lembre-se: voo noturno exige luzes e autorização específica.')}
         </T>
       </Card>
     </ScrollView>

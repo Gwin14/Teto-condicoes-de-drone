@@ -2,6 +2,7 @@ import { Pressable, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg';
 
 import { T } from '@/components/ui';
+import { t } from '@/i18n';
 import { zoneRadii } from '@/lib/airports';
 import { space, useTheme } from '@/theme/tokens';
 
@@ -44,13 +45,13 @@ export function MapSurface(p: MapSurfaceProps) {
           <Line x1={0} y1={cx} x2={size} y2={cx} stroke={c.separator} />
           {p.airports.map((a) => {
             const pt = project(a.lat, a.lon);
-            const r = zoneRadii();
+            const r = zoneRadii(p.region);
             return (
               <G key={a.icao}>
                 {p.showZones ? (
                   <>
                     <Circle cx={pt.x} cy={pt.y} r={r.caution * scale} fill={c.mapZoneCaution} stroke={c.caution} />
-                    <Circle cx={pt.x} cy={pt.y} r={r.critical * scale} fill={c.mapZoneCritical} stroke={c.nogo} />
+                    {r.critical > 0 ? <Circle cx={pt.x} cy={pt.y} r={r.critical * scale} fill={c.mapZoneCritical} stroke={c.nogo} /> : null}
                   </>
                 ) : null}
                 <Circle cx={pt.x} cy={pt.y} r={4} fill={c.nogo} />
@@ -69,7 +70,7 @@ export function MapSurface(p: MapSurfaceProps) {
         </Svg>
       </Pressable>
       <T v="caption" tone="tertiary" style={{ marginTop: space.sm }}>
-        Raio de 40 km · mantenha pressionado para escolher um ponto
+        {t('Raio de 40 km · mantenha pressionado para escolher um ponto')}
       </T>
     </View>
   );

@@ -20,6 +20,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { AirspaceHero, CeilingHero, ScoreHero } from '@/components/onboarding/Heroes';
 import { Button, Card, T } from '@/components/ui';
 import { requestGps } from '@/hooks/useLocation';
+import { t } from '@/i18n';
 import { capabilities } from '@/native/capabilities';
 import { ensurePermission } from '@/native/notifications';
 import { useApp } from '@/store/app';
@@ -30,23 +31,23 @@ type Page = { key: string; title: string; body: string };
 const PAGES: Page[] = [
   {
     key: 'score',
-    title: 'Dá pra voar agora?',
-    body: 'Vento, rajadas, chuva, visibilidade e o limite do seu drone viram um score de 0 a 100. Uma resposta, sem planilha.',
+    title: t('Dá pra voar agora?'),
+    body: t('Vento, rajadas, chuva, visibilidade e o limite do seu drone viram um score de 0 a 100. Uma resposta, sem planilha.'),
   },
   {
     key: 'teto',
-    title: 'O vento lá em cima',
-    body: 'A 120 m o vento costuma ser bem mais forte do que no chão. O Teto mostra cada altura até o limite legal.',
+    title: t('O vento lá em cima'),
+    body: t('A 120 m o vento costuma ser bem mais forte do que no chão. O Teto mostra cada altura até o limite legal.'),
   },
   {
     key: 'airspace',
-    title: 'Onde pode voar',
-    body: 'Zonas de aeródromos, regras da ANAC e os satélites GNSS que o seu drone vai enxergar, no mesmo lugar.',
+    title: t('Onde pode voar'),
+    body: t('Zonas de aeródromos, regras da ANAC e os satélites GNSS que o seu drone vai enxergar, no mesmo lugar.'),
   },
   {
     key: 'permissions',
-    title: 'Quase pronto',
-    body: 'Duas permissões deixam o Teto mais útil. Dá para mudar depois em Ajustes.',
+    title: t('Quase pronto'),
+    body: t('Duas permissões deixam o Teto mais útil. Dá para mudar depois em Ajustes.'),
   },
 ];
 const LAST = PAGES.length - 1;
@@ -138,27 +139,27 @@ function PermissionsHero() {
     <Card style={{ width: '100%', maxWidth: 360, paddingVertical: space.xs }}>
       <PermissionRow
         icon="location"
-        title="Localização"
+        title={t('Localização')}
         subtitle={
           loc === 'denied'
-            ? 'Negada. Você ainda pode escolher um local manualmente.'
-            : 'Condições e aeródromos exatamente onde você está.'
+            ? t('Negada. Você ainda pode escolher um local manualmente.')
+            : t('Condições e aeródromos exatamente onde você está.')
         }
         right={
           loc === 'granted' ? (
             <Icon name="check" size={24} color={c.go} />
           ) : loc === 'denied' ? null : (
-            <Button kind="secondary" title="Permitir" onPress={askLocation} style={{ minHeight: 36, paddingHorizontal: space.lg }} />
+            <Button kind="secondary" title={t('Permitir')} onPress={askLocation} style={{ minHeight: 36, paddingHorizontal: space.lg }} />
           )
         }
       />
       <PermissionRow
         icon="bell"
-        title="Janelas de voo"
+        title={t('Janelas de voo')}
         subtitle={
           capabilities.localNotifications
-            ? 'Um aviso antes das horas boas para voar.'
-            : 'Disponível na versão instalada do app.'
+            ? t('Um aviso antes das horas boas para voar.')
+            : t('Disponível na versão instalada do app.')
         }
         last
         right={
@@ -225,7 +226,7 @@ export default function OnboardingScreen() {
             accessibilityRole="button"
             style={({ pressed }) => ({ opacity: pressed ? 0.4 : 1, minHeight: 44, justifyContent: 'center' })}>
             <T v="body" tone="secondary">
-              Pular
+              {t('Pular')}
             </T>
           </Pressable>
         ) : null}
@@ -266,12 +267,12 @@ export default function OnboardingScreen() {
       </Animated.ScrollView>
 
       <View style={{ paddingHorizontal: space.xxl, paddingBottom: insets.bottom + space.lg, gap: space.xl }}>
-        <View style={{ flexDirection: 'row', gap: space.sm }} accessibilityLabel={`Página ${page + 1} de ${PAGES.length}`}>
+        <View style={{ flexDirection: 'row', gap: space.sm }} accessibilityLabel={t('Página {n} de {total}', { n: page + 1, total: PAGES.length })}>
           {PAGES.map((p, i) => (
             <Dot key={p.key} index={i} x={x} width={width} />
           ))}
         </View>
-        <Button title={isLast ? 'Começar' : 'Continuar'} onPress={() => (isLast ? finish() : goTo(page + 1))} />
+        <Button title={isLast ? t('Começar') : t('Continuar')} onPress={() => (isLast ? finish() : goTo(page + 1))} />
       </View>
     </View>
   );

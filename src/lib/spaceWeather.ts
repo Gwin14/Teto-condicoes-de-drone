@@ -7,6 +7,8 @@
  *   O Brasil fica sob a Anomalia de Ionização Equatorial: após o pôr do sol surgem
  *   "bolhas de plasma" que fazem o sinal GNSS oscilar e o receptor perder satélites.
  */
+import { t } from '@/i18n';
+
 
 export type ScaleLevel = 0 | 1 | 2 | 3 | 4 | 5;
 
@@ -78,9 +80,9 @@ export async function fetchSpaceWeather(signal?: AbortSignal): Promise<SpaceWeat
 }
 
 export const scaleText = {
-  r: ['Sem apagões de rádio', 'Menor', 'Moderado', 'Forte', 'Severo', 'Extremo'],
-  s: ['Sem tempestade de radiação', 'Menor', 'Moderada', 'Forte', 'Severa', 'Extrema'],
-  g: ['Sem tempestade geomagnética', 'Menor', 'Moderada', 'Forte', 'Severa', 'Extrema'],
+  r: [t('Sem apagões de rádio'), t('Menor'), t('Moderado'), t('Forte'), t('Severo'), t('Extremo')],
+  s: [t('Sem tempestade de radiação'), t('Menor'), t('Moderada'), t('Forte'), t('Severa'), t('Extrema')],
+  g: [t('Sem tempestade geomagnética'), t('Menor'), t('Moderada'), t('Forte'), t('Severa'), t('Extrema')],
 };
 
 
@@ -122,7 +124,7 @@ async function latestS4File(signal?: AbortSignal) {
       return { url: dir + name, time: new Date(Date.UTC(+y, +mo - 1, +da, +h, +mi)) };
     }
   }
-  throw new Error('Nenhum mapa S4 recente no INPE');
+  throw new Error('INPE: no recent S4 map');
 }
 
 export async function fetchS4Map(signal?: AbortSignal): Promise<S4Map> {
@@ -132,7 +134,7 @@ export async function fetchS4Map(signal?: AbortSignal): Promise<S4Map> {
   const text = await res.text();
   const grid = new Float32Array(GRID.cols * GRID.rows).fill(NaN);
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length < GRID.rows) throw new Error('Mapa S4 incompleto');
+  if (lines.length < GRID.rows) throw new Error('INPE: incomplete S4 map');
   for (let r = 0; r < GRID.rows; r++) {
     const cells = lines[r].split(';');
     for (let c = 0; c < GRID.cols; c++) {

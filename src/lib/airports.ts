@@ -13,7 +13,10 @@
  */
 import snapshot from '@/data/aerodromes.json';
 
+import { t } from '@/i18n';
+
 import type { AerodromeKind, AerodromeRow } from './anac';
+import type { Region } from './region';
 
 export type Airport = { icao: string; name: string; city: string; uf: string; lat: number; lon: number; kind: AerodromeKind };
 
@@ -25,7 +28,6 @@ export const MIN_DIST_HIGH = 5 * NM;
 /** 100 ft em metros. */
 export const LOW_CEILING_M = 30.48;
 
-export const AERODROME_SOURCE = 'ANAC (aeródromos públicos e privados) e aviationweather.gov';
 
 export function rowsToAirports(rows: AerodromeRow[]): Airport[] {
   return rows.map(([icao, name, city, uf, lat, lon, kind]) => ({ icao, name, city, uf, lat, lon, kind }));
@@ -34,9 +36,12 @@ export function rowsToAirports(rows: AerodromeRow[]): Airport[] {
 export const SNAPSHOT_AIRPORTS: Airport[] = rowsToAirports(snapshot.rows as unknown as AerodromeRow[]);
 export const SNAPSHOT_INFO = snapshot.sources;
 
-/** Raios oficiais: vermelho = 3 NM (proibido em qualquer altura), âmbar = 5 NM (proibido acima de 30 m). */
-export function zoneRadii() {
-  return { critical: MIN_DIST_LOW, caution: MIN_DIST_HIGH };
+/**
+ * Brasil: raios oficiais — vermelho = 3 NM (proibido em qualquer altura), âmbar = 5 NM (proibido acima de 30 m).
+ * Fora do Brasil não há regra única: só o círculo de atenção de 5 NM, sem zona "proibida".
+ */
+export function zoneRadii(region: Region = 'BR') {
+  return region === 'BR' ? { critical: MIN_DIST_LOW, caution: MIN_DIST_HIGH } : { critical: 0, caution: MIN_DIST_HIGH };
 }
 
 /** Distância mínima exigida para a altura planejada (m AGL). */
@@ -71,13 +76,14 @@ export type AirspaceStatus = 'clear' | 'caution' | 'critical';
 
 export type NearbyAirport = Airport & { distance: number; bearing: number; zone: AirspaceStatus };
 
-function zoneFor(distance: number, altitudeM: number): AirspaceStatus {
+function zoneFor(distance: number, altitudeM: number, region: Region): AirspaceStatus {
+  if (region !== 'BR') return distance < MIN_DIST_HIGH ? 'caution' : 'clear';
   if (distance < requiredDistance(altitudeM)) return 'critical';
   if (distance < MIN_DIST_HIGH) return 'caution';
   return 'clear';
 }
 
-export function nearbyAirports(list: Airport[], lat: number, lon: number, maxKm: number, altitudeM: number): NearbyAirport[] {
+export function nearbyAirports(list: Airport[], lat: number, lon: number, maxKm: number, altitudeM: number, region: Region = 'BR'): NearbyAirport[] {
   const max = maxKm * 1000;
   // Pré-filtro barato por caixa antes do haversine.
   const dLat = maxKm / 111;
@@ -87,15 +93,26 @@ export function nearbyAirports(list: Airport[], lat: number, lon: number, maxKm:
     if (Math.abs(a.lat - lat) > dLat || Math.abs(a.lon - lon) > dLon) continue;
     const distance = haversine(lat, lon, a.lat, a.lon);
     if (distance > max) continue;
-    out.push({ ...a, distance, bearing: bearing(lat, lon, a.lat, a.lon), zone: zoneFor(distance, altitudeM) });
+    out.push({ ...a, distance, bearing: bearing(lat, lon, a.lat, a.lon), zone: zoneFor(distance, altitudeM, region) });
   }
   return out.sort((a, b) => a.distance - b.distance);
 }
 
-export function airspaceAt(list: Airport[], lat: number, lon: number, altitudeM: number): { status: AirspaceStatus; nearest: NearbyAirport | null } {
-  const near = nearbyAirports(list, lat, lon, 50, altitudeM);
+export function airspaceAt(
+  list: Airport[],
+  lat: number,
+  lon: number,
+  altitudeM: number,
+  region: Region = 'BR'
+): { status: AirspaceStatus; nearest: NearbyAirport | null } {
+  const near = nearbyAirports(list, lat, lon, 50, altitudeM, region);
   const worst = near.find((a) => a.zone === 'critical') ?? near.find((a) => a.zone === 'caution');
   return { status: worst?.zone ?? 'clear', nearest: worst ?? near[0] ?? null };
 }
 
-export const kindLabel: Record<AerodromeKind, string> = { publico: 'Público', privado: 'Privado', militar: 'Militar' };
+export const kindLabel: Record<AerodromeKind, string> = {
+  publico: t('Público'),
+  privado: t('Privado'),
+  militar: t('Militar'),
+  aeroporto: t('Aeroporto'),
+};

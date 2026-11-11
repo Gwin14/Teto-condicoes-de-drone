@@ -9,9 +9,10 @@ import { Card, EmptyState, InlineError, SectionHeader, Skeleton, StatusPill, T }
 import { S4_AVAILABLE, useConstellations, useForecast, useKp, useScintillation, useSpaceWeather } from '@/hooks/useConditions';
 import { useActiveLocation } from '@/hooks/useLocation';
 import { useNow } from '@/hooks/useNow';
+import { fmtNum, t } from '@/i18n';
 import { fmtHour, fmtTime, fmtWeekday } from '@/lib/format';
 import { CONSTELLATIONS, type Constellation, fmtDop, satellitePositions, snapshot } from '@/lib/gnss';
-import { kpLabel } from '@/lib/scoring';
+import { kpLabel, scintLabel } from '@/lib/scoring';
 import { isS4Fresh, s4At, scaleText, type ScintLevel } from '@/lib/spaceWeather';
 import { useApp } from '@/store/app';
 import { radius, space, useConstellationColors, useTheme, type Verdict, verdictColor } from '@/theme/tokens';
@@ -37,7 +38,7 @@ export default function GnssScreen() {
   const now = useNow(60_000);
 
   if (!location) {
-    return <EmptyState icon="location" title="Escolha um local" message="A contagem de satélites depende de onde você está." />;
+    return <EmptyState icon="location" title={t('Escolha um local')} message={t('A contagem de satélites depende de onde você está.')} />;
   }
   const elevation = (forecast.data?.elevation ?? 0) + altitude;
   const W = Math.min(width, 600) - space.lg * 4;
@@ -48,9 +49,9 @@ export default function GnssScreen() {
   const timeline = sats.data
     ? Array.from({ length: 48 }).map((_, i) => snapshot(sats.data!.sats, location.lat, location.lon, elevation, now + i * 30 * 60_000, mask))
     : [];
-  const maxVisible = Math.max(1, ...timeline.map((t) => t.visible.length));
-  const minVisible = timeline.length ? Math.min(...timeline.map((t) => t.visible.length)) : 0;
-  const worstPdop = timeline.reduce((m, t) => Math.max(m, Number.isFinite(t.pdop) ? t.pdop : 99), 0);
+  const maxVisible = Math.max(1, ...timeline.map((x) => x.visible.length));
+  const minVisible = timeline.length ? Math.min(...timeline.map((x) => x.visible.length)) : 0;
+  const worstPdop = timeline.reduce((m, x) => Math.max(m, Number.isFinite(x.pdop) ? x.pdop : 99), 0);
   const selected = sel != null ? timeline[sel] : null;
 
   const kpNow = kp.data?.now ?? 0;
@@ -67,12 +68,12 @@ export default function GnssScreen() {
       contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: 80 }}>
       {/* --------------------------------------------------- Satélites agora */}
       <View style={{ gap: space.sm }}>
-        <SectionHeader title="Satélites agora" icon="satellite" />
+        <SectionHeader title={t('Satélites agora')} icon="satellite" />
         <Card style={{ gap: space.lg }}>
           {sats.isLoading ? (
             <Skeleton style={{ height: W, borderRadius: W / 2 }} />
           ) : sats.error || !snapNow ? (
-            <InlineError message="Não foi possível baixar os elementos orbitais (CelesTrak)." onRetry={() => sats.refetch()} />
+            <InlineError message={t('Não foi possível baixar os elementos orbitais (CelesTrak).')} onRetry={() => sats.refetch()} />
           ) : (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
@@ -80,7 +81,7 @@ export default function GnssScreen() {
                   {snapNow.visible.length}
                 </T>
                 <T v="subhead" tone="secondary" style={{ flex: 1 }}>
-                  visíveis acima de {mask}° · {all.length} acima do horizonte
+                  {t('visíveis acima de {mask}° · {n} acima do horizonte', { mask, n: all.length })}
                 </T>
               </View>
               <View style={{ alignItems: 'center' }}>
@@ -90,13 +91,13 @@ export default function GnssScreen() {
               <View>
                 <View style={{ flexDirection: 'row', paddingBottom: 6, borderBottomWidth: 0.5, borderBottomColor: c.separator }}>
                   <T v="caption2" tone="tertiary" style={{ flex: 1 }}>
-                    CONSTELAÇÃO
+                    {t('CONSTELAÇÃO')}
                   </T>
                   <T v="caption2" tone="tertiary" style={{ width: 64, textAlign: 'right' }}>
-                    VISÍVEIS
+                    {t('VISÍVEIS')}
                   </T>
                   <T v="caption2" tone="tertiary" style={{ width: 70, textAlign: 'right' }}>
-                    NA ÓRBITA
+                    {t('NA ÓRBITA')}
                   </T>
                 </View>
                 {CONSTELLATIONS.map((k) => {
@@ -116,20 +117,20 @@ export default function GnssScreen() {
                         {failed ? '—' : snapNow.byConstellation[k.id]}
                       </T>
                       <T v="body" num tone="secondary" style={{ width: 70, textAlign: 'right' }}>
-                        {failed ? 'falhou' : total}
+                        {failed ? t('falhou') : total}
                       </T>
                     </View>
                   );
                 })}
               </View>
               <View style={{ flexDirection: 'row', gap: space.sm }}>
-                <Metric label="PDOP" value={fmtDop(snapNow.pdop)} note="posição 3D" />
-                <Metric label="HDOP" value={fmtDop(snapNow.hdop)} note="horizontal" />
-                <Metric label="GPS" value={String(snapNow.byConstellation.gps)} note="só GPS" />
+                <Metric label="PDOP" value={fmtDop(snapNow.pdop)} note={t('posição 3D')} />
+                <Metric label="HDOP" value={fmtDop(snapNow.hdop)} note={t('horizontal')} />
+                <Metric label="GPS" value={String(snapNow.byConstellation.gps)} note={t('só GPS')} />
               </View>
               <View style={{ gap: space.sm }}>
                 <T v="subhead" tone="secondary">
-                  Máscara de elevação
+                  {t('Máscara de elevação')}
                 </T>
                 <Segmented
                   values={MASKS.map((m) => `${m}°`)}
@@ -140,7 +141,7 @@ export default function GnssScreen() {
                   }}
                 />
                 <T v="caption" tone="tertiary">
-                  Satélites muito baixos no horizonte chegam com sinal fraco e mais erro. Em locais cercados por prédios ou árvores, use 15–20°.
+                  {t('Satélites muito baixos no horizonte chegam com sinal fraco e mais erro. Em locais cercados por prédios ou árvores, use 15–20°.')}
                 </T>
               </View>
             </>
@@ -151,31 +152,31 @@ export default function GnssScreen() {
       {/* ------------------------------------------------- Próximas 24 horas */}
       {timeline.length > 0 ? (
         <View style={{ gap: space.sm }}>
-          <SectionHeader title="Satélites nas próximas 24 h" icon="timer" />
+          <SectionHeader title={t('Satélites nas próximas 24 h')} icon="timer" />
           <Card style={{ gap: space.md }}>
             <T v="subhead" tone="secondary" num>
               {selected
-                ? `${fmtTime(selected.time)} · ${selected.visible.length} satélites · PDOP ${fmtDop(selected.pdop)}`
-                : `Mínimo de ${minVisible} satélites · pior PDOP ${fmtDop(worstPdop)}. Toque numa barra.`}
+                ? t('{time} · {n} satélites · PDOP {pdop}', { time: fmtTime(selected.time), n: selected.visible.length, pdop: fmtDop(selected.pdop) })
+                : t('Mínimo de {n} satélites · pior PDOP {pdop}. Toque numa barra.', { n: minVisible, pdop: fmtDop(worstPdop) })}
             </T>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 110, gap: 2 }}>
-              {timeline.map((t, i) => {
-                const h = (t.visible.length / maxVisible) * 110;
+              {timeline.map((snap, i) => {
+                const h = (snap.visible.length / maxVisible) * 110;
                 const active = sel === i;
                 return (
                   <Pressable
-                    key={t.time.getTime()}
+                    key={snap.time.getTime()}
                     onPress={() => {
                       Haptics.selectionAsync().catch(() => {});
                       setSel(active ? null : i);
                     }}
                     hitSlop={{ top: 20, bottom: 4 }}
-                    accessibilityLabel={`${fmtTime(t.time)}: ${t.visible.length} satélites`}
+                    accessibilityLabel={t('{time}: {n} satélites', { time: fmtTime(snap.time), n: snap.visible.length })}
                     style={{ flex: 1, height: 110, justifyContent: 'flex-end', opacity: sel == null || active ? 1 : 0.4 }}>
                     <View style={{ height: h, borderTopLeftRadius: 2, borderTopRightRadius: 2, overflow: 'hidden', gap: 1 }}>
                       {(['beidou', 'glonass', 'galileo', 'gps'] as Constellation[]).map((k) =>
-                        t.byConstellation[k] > 0 ? (
-                          <View key={k} style={{ flex: t.byConstellation[k], backgroundColor: colors[k] }} />
+                        snap.byConstellation[k] > 0 ? (
+                          <View key={k} style={{ flex: snap.byConstellation[k], backgroundColor: colors[k] }} />
                         ) : null
                       )}
                     </View>
@@ -192,11 +193,11 @@ export default function GnssScreen() {
             </View>
             <Legend />
             <T v="footnote" tone="secondary" style={{ marginTop: space.xs }}>
-              PDOP a cada 30 min (menor é melhor; acima de 3 é ruim)
+              {t('PDOP a cada 30 min (menor é melhor; acima de 3 é ruim)')}
             </T>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 44, gap: 2 }}>
-              {timeline.map((t, i) => {
-                const p = Number.isFinite(t.pdop) ? t.pdop : 6;
+              {timeline.map((snap, i) => {
+                const p = Number.isFinite(snap.pdop) ? snap.pdop : 6;
                 const v: Verdict = p > 6 ? 'nogo' : p > 3 ? 'caution' : 'go';
                 return (
                   <View
@@ -214,7 +215,7 @@ export default function GnssScreen() {
               })}
             </View>
             <T v="caption" tone="tertiary">
-              Calculado a partir das órbitas publicadas, para céu aberto. Obstáculos reduzem o número real.
+              {t('Calculado a partir das órbitas publicadas, para céu aberto. Obstáculos reduzem o número real.')}
             </T>
           </Card>
         </View>
@@ -222,67 +223,66 @@ export default function GnssScreen() {
 
       {/* -------------------------------------------------- Cintilação */}
       <View style={{ gap: space.sm }}>
-        <SectionHeader title="Cintilação ionosférica" icon="globe" />
+        <SectionHeader title={t('Cintilação ionosférica')} icon="globe" />
         <Card style={{ gap: space.md }}>
           {!S4_AVAILABLE ? (
             <T v="subhead" tone="secondary">
-              A medição do INPE só pode ser baixada pelo app no celular: o servidor não permite acesso pelo navegador.
+              {t('A medição do INPE só pode ser baixada pelo app no celular: o servidor não permite acesso pelo navegador.')}
             </T>
           ) : s4.isLoading ? (
             <Skeleton style={{ height: 48 }} />
           ) : s4.error && !s4.data ? (
-            <InlineError message="Mapa de cintilação do INPE indisponível agora." onRetry={() => s4.refetch()} />
+            <InlineError message={t('Mapa de cintilação do INPE indisponível agora.')} onRetry={() => s4.refetch()} />
           ) : scintNow ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                 <View style={{ flex: 1, gap: 2 }}>
                   <T v="title3" num>
-                    S4 {scintNow.s4.toFixed(2).replace('.', ',')} · cintilação {scintNow.level}
+                    {t('S4 {s4} · cintilação {level}', { s4: fmtNum(scintNow.s4, 2), level: scintLabel[scintNow.level] })}
                   </T>
                   <T v="footnote" tone="secondary" num>
-                    Medido às {fmtTime(scintNow.time)} (há {s4Age} min)
-                    {scintNow.distanceKm > 30 ? ` · célula a ${Math.round(scintNow.distanceKm)} km` : ''}
+                    {t('Medido às {time} (há {n} min)', { time: fmtTime(scintNow.time), n: s4Age ?? 0 })}
+                    {scintNow.distanceKm > 30 ? ` · ${t('célula a {km} km', { km: Math.round(scintNow.distanceKm) })}` : ''}
                   </T>
                 </View>
-                <StatusPill v={scintVerdict[scintNow.level]} label={scintNow.level} small />
+                <StatusPill v={scintVerdict[scintNow.level]} label={scintLabel[scintNow.level]} small />
               </View>
               <T v="footnote" tone="secondary">
                 {scintNow.level === 'fraca'
-                  ? 'Sinal dos satélites estável na ionosfera sobre o seu local.'
-                  : 'O sinal dos satélites está oscilando: o receptor pode perder satélites e a precisão cai. Mantenha o drone próximo.'}
+                  ? t('Sinal dos satélites estável na ionosfera sobre o seu local.')
+                  : t('O sinal dos satélites está oscilando: o receptor pode perder satélites e a precisão cai. Mantenha o drone próximo.')}
               </T>
             </>
           ) : (
             <T v="subhead" tone="secondary">
               {reading
-                ? `A última medição perto daqui é das ${fmtTime(reading.time)} e já não representa o momento atual.`
-                : 'Nenhuma estação de monitoramento cobre este local agora. A rede do INPE cobre principalmente o Brasil.'}
+                ? t('A última medição perto daqui é das {time} e já não representa o momento atual.', { time: fmtTime(reading.time) })
+                : t('Nenhuma estação de monitoramento cobre este local agora. A rede do INPE cobre principalmente o Brasil.')}
             </T>
           )}
           <T v="caption" tone="tertiary">
-            Índice S4 medido pela rede EMBRACE/INPE, IBGE, INCT GNSS-NavAer/UNESP e NSSC/CAS. Não existe previsão oficial de cintilação: a
-            temporada de bolhas de plasma no Brasil vai de setembro a março, após o pôr do sol.
+            {t('Índice S4 medido pela rede EMBRACE/INPE, IBGE, INCT GNSS-NavAer/UNESP e NSSC/CAS. Não existe previsão oficial de cintilação: a temporada de bolhas de plasma no Brasil vai de setembro a março, após o pôr do sol.')}
           </T>
         </Card>
       </View>
 
       {/* ---------------------------------------------------- Clima espacial */}
       <View style={{ gap: space.sm }}>
-        <SectionHeader title="Clima espacial (NOAA)" icon="sunStorm" />
-        {sw.error && !sw.data ? <InlineError message="Escalas da NOAA indisponíveis." onRetry={() => sw.refetch()} /> : null}
+        <SectionHeader title={t('Clima espacial (NOAA)')} icon="sunStorm" />
+        {sw.error && !sw.data ? <InlineError message={t('Escalas da NOAA indisponíveis.')} onRetry={() => sw.refetch()} /> : null}
         <Card padded={false}>
-          <ScaleRow icon="radio" code="R" label="Apagão de rádio" level={sw.data?.now.r ?? 0} text={scaleText.r} effect="Erupções solares: degradam GNSS e rádio no lado iluminado" />
-          <ScaleRow icon="sunStorm" code="S" label="Radiação solar" level={sw.data?.now.s ?? 0} text={scaleText.s} effect="Partículas energéticas: efeito pequeno no voo de drones" />
-          <ScaleRow icon="compass" code="G" label="Geomagnética" level={sw.data?.now.g ?? 0} text={scaleText.g} effect={`Kp ${kpNow.toFixed(1).replace('.', ',')} · ${kpLabel(kpNow)}`} last />
+          <ScaleRow icon="radio" code="R" label={t('Apagão de rádio')} level={sw.data?.now.r ?? 0} text={scaleText.r} effect={t('Erupções solares: degradam GNSS e rádio no lado iluminado')} />
+          <ScaleRow icon="sunStorm" code="S" label={t('Radiação solar')} level={sw.data?.now.s ?? 0} text={scaleText.s} effect={t('Partículas energéticas: efeito pequeno no voo de drones')} />
+          <ScaleRow icon="compass" code="G" label={t('Geomagnética')} level={sw.data?.now.g ?? 0} text={scaleText.g} effect={`Kp ${fmtNum(kpNow, 1)} · ${kpLabel(kpNow)}`} last />
         </Card>
         {sw.data && sw.data.forecast.length > 0 ? (
           <Card style={{ gap: space.sm }}>
             <View style={{ flexDirection: 'row' }}>
               <T v="caption2" tone="tertiary" style={{ flex: 1 }}>
-                PREVISÃO
+                {t('PREVISÃO')}
               </T>
               <T v="caption2" tone="tertiary" style={{ width: 84, textAlign: 'right' }}>
-                ERUPÇÃO R1+
+                {t('ERUPÇÃO R1+')}
               </T>
               <T v="caption2" tone="tertiary" style={{ width: 70, textAlign: 'right' }}>
                 R3+
@@ -314,7 +314,7 @@ export default function GnssScreen() {
       {/* -------------------------------------------------------- Kp 72 h */}
       {kpPoints.length > 0 ? (
         <View style={{ gap: space.sm }}>
-          <SectionHeader title="Índice Kp · últimas 24 h e próximos dias" icon="gauge" />
+          <SectionHeader title={t('Índice Kp · últimas 24 h e próximos dias')} icon="gauge" />
           <Card style={{ gap: space.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 90, gap: 2 }}>
               {kpPoints.map((p) => {
@@ -323,7 +323,7 @@ export default function GnssScreen() {
                   <View
                     key={p.time.getTime()}
                     accessible
-                    accessibilityLabel={`${fmtWeekday(p.time)} ${fmtHour(p.time)}: Kp ${p.kp.toFixed(1)}${p.observed ? '' : ' previsto'}`}
+                    accessibilityLabel={`${fmtWeekday(p.time)} ${fmtHour(p.time)}: Kp ${fmtNum(p.kp, 1)}${p.observed ? '' : ` ${t('previsto')}`}`}
                     style={{
                       flex: 1,
                       height: Math.max(4, (p.kp / 9) * 90),
@@ -345,7 +345,7 @@ export default function GnssScreen() {
               </T>
             </View>
             <T v="caption" tone="tertiary">
-              Barras cheias = observado · esmaecidas = previsão. Escala 0–9; a partir de 5 há tempestade geomagnética.
+              {t('Barras cheias = observado · esmaecidas = previsão. Escala 0–9; a partir de 5 há tempestade geomagnética.')}
             </T>
           </Card>
         </View>
@@ -353,13 +353,13 @@ export default function GnssScreen() {
 
       {/* ------------------------------------------------ Interferência local */}
       <View style={{ gap: space.sm }}>
-        <SectionHeader title="Interferência no local" icon="wifi" />
+        <SectionHeader title={t('Interferência no local')} icon="wifi" />
         <Card style={{ gap: space.lg }}>
-          <Tip icon="powerline" title="Linhas de energia e subestações" body="Campos fortes atrapalham a bússola. Decole a pelo menos 30 m de distância e nunca cruze fios." />
-          <Tip icon="radio" title="Torres de celular e rádio" body="Antenas potentes podem interferir no link de controle e vídeo. Evite voar colado a elas." />
-          <Tip icon="wifi" title="Wi-Fi congestionado (2,4/5,8 GHz)" body="Em centros urbanos e eventos, o link sofre. Prefira 5,8 GHz quando disponível e mantenha a antena do controle apontada." />
-          <Tip icon="compass" title="Metal e concreto armado" body="Carros, lajes, pontes e trilhos desviam a bússola. Calibre e decole longe deles, sobre o chão." />
-          <Tip icon="airport" title="Radares e aeroportos" body="Perto de radares o rádio pode oscilar — e é zona restrita. Confira o SARPAS." />
+          <Tip icon="powerline" title={t('Linhas de energia e subestações')} body={t('Campos fortes atrapalham a bússola. Decole a pelo menos 30 m de distância e nunca cruze fios.')} />
+          <Tip icon="radio" title={t('Torres de celular e rádio')} body={t('Antenas potentes podem interferir no link de controle e vídeo. Evite voar colado a elas.')} />
+          <Tip icon="wifi" title={t('Wi-Fi congestionado (2,4/5,8 GHz)')} body={t('Em centros urbanos e eventos, o link sofre. Prefira 5,8 GHz quando disponível e mantenha a antena do controle apontada.')} />
+          <Tip icon="compass" title={t('Metal e concreto armado')} body={t('Carros, lajes, pontes e trilhos desviam a bússola. Calibre e decole longe deles, sobre o chão.')} />
+          <Tip icon="airport" title={t('Radares e aeroportos')} body={t('Perto de radares o rádio pode oscilar — e costuma ser zona restrita. Confira as regras de espaço aéreo.')} />
         </Card>
       </View>
     </ScrollView>

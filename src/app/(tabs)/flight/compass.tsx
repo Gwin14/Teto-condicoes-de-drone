@@ -8,7 +8,8 @@ import Svg, { Circle, G, Line, Path, Text as SvgText } from 'react-native-svg';
 import { Card, T } from '@/components/ui';
 import { useConditions } from '@/hooks/useConditions';
 import { useActiveLocation } from '@/hooks/useLocation';
-import { cardinal, cardinalName, fmtSpeed } from '@/lib/format';
+import { t } from '@/i18n';
+import { CARDINAL4, cardinal, cardinalName, fmtSpeed } from '@/lib/format';
 import { capabilities } from '@/native/capabilities';
 import { useApp } from '@/store/app';
 import { space, useTheme } from '@/theme/tokens';
@@ -17,11 +18,13 @@ import { space, useTheme } from '@/theme/tokens';
  * Bússola de vento: aponte o celular para onde pretende voar e veja a
  * componente de proa/cauda e lateral do vento na sua altitude planejada.
  */
+const kindLabel = { proa: t('Vento de proa'), cauda: t('Vento de cauda'), lateral: t('Vento lateral') } as const;
+
 export default function CompassScreen() {
   const { c } = useTheme();
   const { width } = useWindowDimensions();
   const { location } = useActiveLocation();
-  const { data, drone, altitude } = useConditions(location?.lat, location?.lon);
+  const { data, drone, altitude } = useConditions(location?.lat, location?.lon, location?.country);
   const unit = useApp((s) => s.speedUnit);
   const [heading, setHeading] = useState(0);
   const [live, setLive] = useState(false);
@@ -40,7 +43,7 @@ export default function CompassScreen() {
           setHeading(v);
           setLive(true);
           const card = cardinal(v);
-          if (card !== lastCardinal.current && ['N', 'L', 'S', 'O'].includes(card)) {
+          if (card !== lastCardinal.current && (CARDINAL4 as readonly string[]).includes(card)) {
             Haptics.selectionAsync().catch(() => {});
           }
           lastCardinal.current = card;
@@ -75,7 +78,7 @@ export default function CompassScreen() {
           {Math.round(heading)}° {cardinal(heading)}
         </T>
         <T v="subhead" tone="secondary">
-          {live ? 'Direção para onde o celular aponta' : capabilities.heading ? 'Aguardando a bússola…' : 'Arraste para simular a direção'}
+          {live ? t('Direção para onde o celular aponta') : capabilities.heading ? t('Aguardando a bússola…') : t('Arraste para simular a direção')}
         </T>
       </View>
 
@@ -100,12 +103,7 @@ export default function CompassScreen() {
                 />
               );
             })}
-            {[
-              ['N', 0],
-              ['L', 90],
-              ['S', 180],
-              ['O', 270],
-            ].map(([l, deg]) => {
+            {CARDINAL4.map((l, i) => [l, i * 90] as const).map(([l, deg]) => {
               const a = ((deg as number) * Math.PI) / 180;
               const rr = r - 42;
               return (
@@ -113,7 +111,7 @@ export default function CompassScreen() {
                   key={l as string}
                   x={r + rr * Math.sin(a)}
                   y={r - rr * Math.cos(a) + 7}
-                  fill={l === 'N' ? c.nogo : c.label}
+                  fill={deg === 0 ? c.nogo : c.label}
                   fontSize={20}
                   fontWeight="700"
                   textAnchor="middle">
@@ -143,7 +141,7 @@ export default function CompassScreen() {
             onValueChange={setHeading}
             minimumTrackTintColor={c.accent}
             maximumTrackTintColor={c.fill}
-            accessibilityLabel="Direção de voo"
+            accessibilityLabel={t('Direção de voo')}
           />
         </View>
       ) : null}
@@ -151,19 +149,27 @@ export default function CompassScreen() {
       {data ? (
         <Card style={{ alignSelf: 'stretch', gap: space.md }}>
           <T v="title3">
-            Vento de {kind} · {fmtSpeed(Math.abs(kind === 'lateral' ? cross : head), unit)}
+            {kindLabel[kind]} · {fmtSpeed(Math.abs(kind === 'lateral' ? cross : head), unit)}
           </T>
           <T v="subhead" tone="secondary">
-            A {altitude} m o vento vem de {cardinalName(windFrom)} ({cardinal(windFrom)}) a {fmtSpeed(windSpeed, unit)}. Voando para{' '}
-            {cardinal(heading)}: {head >= 0 ? 'proa' : 'cauda'} {fmtSpeed(Math.abs(head), unit)}, lateral {fmtSpeed(Math.abs(cross), unit)}.
+            {t('A {alt} m o vento vem de {from} ({card}) a {speed}. Voando para {heading}: {hk} {head}, lateral {cross}.', {
+              alt: altitude,
+              from: cardinalName(windFrom),
+              card: cardinal(windFrom),
+              speed: fmtSpeed(windSpeed, unit),
+              heading: cardinal(heading),
+              hk: head >= 0 ? t('proa') : t('cauda'),
+              head: fmtSpeed(Math.abs(head), unit),
+              cross: fmtSpeed(Math.abs(cross), unit),
+            })}
           </T>
           <View style={{ height: 0.5, backgroundColor: c.separator }} />
           <T v="subhead">
-            Dica: comece o voo em direção a {cardinalName(windFrom)}, contra o vento. Assim o retorno, com a bateria mais baixa, fica a favor.
+            {t('Dica: comece o voo em direção a {dir}, contra o vento. Assim o retorno, com a bateria mais baixa, fica a favor.', { dir: cardinalName(windFrom) })}
           </T>
           {windSpeed > drone.maxWind * 0.7 ? (
             <T v="footnote" tone="nogo">
-              Vento acima de 70% do limite do {drone.name}: com vento de proa o drone pode não avançar.
+              {t('Vento acima de 70% do limite do {drone}: com vento de proa o drone pode não avançar.', { drone: drone.name })}
             </T>
           ) : null}
         </Card>

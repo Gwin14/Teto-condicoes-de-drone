@@ -1,5 +1,7 @@
 import { isRunningInExpoGo, requireOptionalNativeModule } from 'expo';
 
+import { t } from '@/i18n';
+
 /**
  * Detecção de capacidades nativas.
  *
@@ -33,8 +35,8 @@ export const capabilities = {
 };
 
 export function capabilityNote(kind: 'widgets' | 'liveActivities') {
-  if (OS === 'web') return 'Indisponível na web.';
-  if (inExpoGo) return 'Requer development build — no Expo Go você vê a prévia.';
-  if (kind === 'liveActivities' && OS !== 'ios') return 'Live Activities são exclusivas do iOS.';
-  return capabilities[kind] ? 'Ativo neste dispositivo.' : 'Módulo nativo não encontrado nesta build.';
+  if (OS === 'web') return t('Indisponível na web.');
+  if (inExpoGo) return t('Requer development build — no Expo Go você vê a prévia.');
+  if (kind === 'liveActivities' && OS !== 'ios') return t('Live Activities são exclusivas do iOS.');
+  return capabilities[kind] ? t('Ativo neste dispositivo.') : t('Módulo nativo não encontrado nesta build.');
 }

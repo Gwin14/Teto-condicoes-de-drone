@@ -4,6 +4,7 @@ import { View } from 'react-native';
 import { Icon, type IconName } from '@/components/Icon';
 import { PressableScale, T } from '@/components/ui';
 import type { Conditions } from '@/hooks/useConditions';
+import { fmtNum, t } from '@/i18n';
 import { fmtDistance, fmtTemp, fmtVisibility, type TempUnit } from '@/lib/format';
 import { kpLabel } from '@/lib/scoring';
 import { radius, space, useTheme } from '@/theme/tokens';
@@ -16,56 +17,56 @@ export function MetricsGrid({ data, tempUnit }: { data: Conditions; tempUnit: Te
   const tiles: Tile[] = [
     {
       icon: 'thermometer',
-      label: 'Temperatura',
+      label: t('Temperatura'),
       value: fmtTemp(h.temp, tempUnit),
-      note: `Sensação ${fmtTemp(h.apparent, tempUnit)}`,
+      note: t('Sensação {temp}', { temp: fmtTemp(h.apparent, tempUnit) }),
       factor: 'temperature',
     },
     {
       icon: 'humidity',
-      label: 'Umidade',
+      label: t('Umidade'),
       value: `${Math.round(h.humidity)}%`,
-      note: `Orvalho ${fmtTemp(h.dewPoint, tempUnit)}${h.temp - h.dewPoint < 2.5 ? ' · lente pode embaçar' : ''}`,
+      note: t('Orvalho {temp}', { temp: fmtTemp(h.dewPoint, tempUnit) }) + (h.temp - h.dewPoint < 2.5 ? ` · ${t('lente pode embaçar')}` : ''),
     },
     {
       icon: 'cloud',
-      label: 'Base de nuvens',
+      label: t('Base de nuvens'),
       value: `~${fmtDistance(Math.round(n.cloudBase / 10) * 10)}`,
-      note: `Cobertura ${Math.round(h.cloud)}%`,
+      note: t('Cobertura {pct}%', { pct: Math.round(h.cloud) }),
       factor: 'cloudbase',
     },
     {
       icon: 'visibility',
-      label: 'Visibilidade',
+      label: t('Visibilidade'),
       value: fmtVisibility(h.visibility),
-      note: h.visibility >= 5000 ? 'Boa para VLOS' : 'Reduzida',
+      note: h.visibility >= 5000 ? t('Boa para VLOS') : t('Reduzida'),
       factor: 'visibility',
     },
     {
       icon: 'satellite',
-      label: 'Índice Kp',
-      value: n.kp.toFixed(1).replace('.', ','),
+      label: t('Índice Kp'),
+      value: fmtNum(n.kp, 1),
       note: kpLabel(n.kp),
       factor: 'kp',
     },
     {
       icon: 'rain',
-      label: 'Chuva',
+      label: t('Chuva'),
       value: `${Math.round(h.precipProb)}%`,
-      note: h.precip > 0 ? `${h.precip.toFixed(1)} mm agora` : 'Sem precipitação',
+      note: h.precip > 0 ? t('{mm} mm agora', { mm: fmtNum(h.precip, 1) }) : t('Sem precipitação'),
       factor: 'precip',
     },
     {
       icon: 'mountain',
-      label: 'Altitude-densidade',
+      label: t('Altitude-densidade'),
       value: Number.isFinite(data.densityAlt) ? fmtDistance(Math.max(0, data.densityAlt)) : '—',
-      note: data.densityAlt > 1500 ? 'Menos sustentação' : `Elevação ${Math.round(data.forecast.elevation)} m`,
+      note: data.densityAlt > 1500 ? t('Menos sustentação') : t('Elevação {m} m', { m: Math.round(data.forecast.elevation) }),
     },
     {
       icon: 'uv',
-      label: 'Índice UV',
+      label: t('Índice UV'),
       value: String(Math.round(h.uv)),
-      note: h.uv >= 8 ? 'Muito alto · proteja-se' : h.uv >= 6 ? 'Alto' : 'Moderado ou baixo',
+      note: h.uv >= 8 ? t('Muito alto · proteja-se') : h.uv >= 6 ? t('Alto') : t('Moderado ou baixo'),
     },
   ];
 

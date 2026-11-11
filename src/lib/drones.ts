@@ -2,6 +2,8 @@
  * Perfis de drone. Os limites vêm das especificações oficiais dos fabricantes
  * (resistência máxima ao vento, faixa de temperatura e autonomia).
  */
+import { t } from '@/i18n';
+
 export type DroneProfile = {
   id: string;
   name: string;
@@ -195,7 +197,7 @@ export const DRONES: DroneProfile[] = [
   {
     id: 'fpv5',
     name: 'FPV 5" (custom)',
-    brand: 'Montado',
+    brand: t('Montado'),
     maxWind: 50,
     flightTime: 6,
     cruiseSpeed: 80,
@@ -216,9 +218,9 @@ export function findDrone(id: string, custom?: DroneProfile | null): DroneProfil
 }
 
 export const categoryLabel: Record<DroneProfile['category'], string> = {
-  mini: 'Até 250 g',
-  consumer: 'Consumo',
-  pro: 'Profissional',
+  mini: t('Até 250 g'),
+  consumer: t('Consumo'),
+  pro: t('Profissional'),
   fpv: 'FPV',
   enterprise: 'Enterprise',
 };

@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { Card, T } from '@/components/ui';
+import { t } from '@/i18n';
 import type { DroneProfile } from '@/lib/drones';
 import { cardinal, convertSpeed, fmtSpeed, type SpeedUnit } from '@/lib/format';
 import { windAtAltitude } from '@/lib/scoring';
@@ -63,7 +64,7 @@ export function WindProfileCard({ hour, drone, altitude, unit }: { hour: Hour; d
         );
       })}
       <T v="caption" tone="tertiary">
-        Linha vertical = limite do {drone.name} ({fmtSpeed(drone.maxWind, unit)}). Seta indica para onde o vento sopra.
+        {t('Linha vertical = limite do {drone} ({limit}). Seta indica para onde o vento sopra.', { drone: drone.name, limit: fmtSpeed(drone.maxWind, unit) })}
       </T>
     </Card>
   );

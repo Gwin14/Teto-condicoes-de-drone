@@ -1,4 +1,5 @@
 import type { NearbyAirport } from '@/lib/airports';
+import type { Region } from '@/lib/region';
 import type { SavedSpot } from '@/store/app';
 
 export type LatLon = { lat: number; lon: number };
@@ -10,6 +11,7 @@ export type MapSurfaceProps = {
   spots: SavedSpot[];
   selected: LatLon | null;
   showZones: boolean;
+  region: Region;
   dark: boolean;
   onLongPress: (p: LatLon) => void;
   onSelectSpot: (s: SavedSpot) => void;

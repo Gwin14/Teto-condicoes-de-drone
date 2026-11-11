@@ -6,7 +6,9 @@ import { Icon } from '@/components/Icon';
 import { SheetHeader } from '@/components/SheetHeader';
 import { Card, T } from '@/components/ui';
 import { categoryLabel, DRONES } from '@/lib/drones';
+import { t } from '@/i18n';
 import { fmtSpeed } from '@/lib/format';
+import { openPro } from '@/lib/purchases';
 import { useApp } from '@/store/app';
 import { space, useTheme } from '@/theme/tokens';
 
@@ -33,11 +35,11 @@ export default function DroneSheet() {
       stickyHeaderIndices={[0]}
       contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={{ backgroundColor: c.background, zIndex: 1 }}>
-        <SheetHeader title="Seu drone" left={null} right="OK" onRight={() => router.back()} />
+        <SheetHeader title={t('Seu drone')} left={null} right={t('OK')} onRight={() => router.back()} />
       </View>
       <View style={{ paddingHorizontal: space.lg, gap: space.md }}>
         <T v="footnote" tone="secondary" style={{ paddingHorizontal: space.xs }}>
-          O score usa os limites oficiais do fabricante: resistência ao vento, faixa de temperatura e autonomia.
+          {t('O score usa os limites oficiais do fabricante: resistência ao vento, faixa de temperatura e autonomia.')}
         </T>
         <Card padded={false}>
           {list.map((d, i) => {
@@ -68,7 +70,7 @@ export default function DroneSheet() {
                           {d.brand} {d.name}
                         </T>
                         <T v="footnote" tone="secondary" num>
-                          {categoryLabel[d.category]} · {d.weightG} g · vento até {fmtSpeed(d.maxWind, unit)} · {d.flightTime} min
+                          {categoryLabel[d.category]} · {d.weightG} g · {t('vento até {speed}', { speed: fmtSpeed(d.maxWind, unit) })} · {d.flightTime} min
                         </T>
                       </View>
                       {active ? <Icon name="check" size={22} color={c.accent} /> : null}
@@ -82,11 +84,11 @@ export default function DroneSheet() {
         <Pressable
           onPress={() => {
             router.back();
-            setTimeout(() => router.push('/settings/drone-custom'), 250);
+            setTimeout(() => openPro('/settings/drone-custom'), 250);
           }}
           style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, paddingVertical: space.sm, alignItems: 'center' })}>
           <T v="body" tone="accent">
-            {custom ? 'Editar drone personalizado' : 'Criar perfil personalizado'}
+            {custom ? t('Editar drone personalizado') : t('Criar perfil personalizado')}
           </T>
         </Pressable>
       </View>

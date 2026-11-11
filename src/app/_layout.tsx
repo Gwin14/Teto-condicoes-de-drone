@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { BackgroundSync } from '@/components/BackgroundSync';
+import { t } from '@/i18n';
+import { configurePurchases } from '@/lib/purchases';
 import { addResponseListener } from '@/native/notifications';
 import { useApp } from '@/store/app';
 import { useTheme } from '@/theme/tokens';
@@ -45,6 +47,8 @@ export default function RootLayout() {
 
   useEffect(() => addResponseListener((url) => router.navigate(url as never)), []);
 
+  useEffect(() => configurePurchases(), []);
+
   const base = isDark ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,
@@ -66,7 +70,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="location"
-              options={{ presentation: 'modal', title: 'Local de voo', headerShown: false }}
+              options={{ presentation: 'modal', title: t('Local de voo'), headerShown: false }}
             />
             <Stack.Screen
               name="drone"
@@ -91,10 +95,11 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen name="checklist" options={{ presentation: 'modal', headerShown: false }} />
+            <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: false }} />
             <Stack.Screen
               name="gnss"
               options={{
-                title: 'Satélites e interferência',
+                title: t('Satélites e interferência'),
                 headerBackButtonDisplayMode: 'minimal',
                 headerTintColor: c.accent,
                 headerTitleStyle: { color: c.label },

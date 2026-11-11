@@ -9,7 +9,9 @@ import { SheetHeader } from '@/components/SheetHeader';
 import { Button, Card, StatusPill, T } from '@/components/ui';
 import { useConditions } from '@/hooks/useConditions';
 import { useActiveLocation } from '@/hooks/useLocation';
+import { t } from '@/i18n';
 import { startFlight } from '@/lib/flight';
+import { regionAt } from '@/lib/region';
 import { verdictLabel } from '@/lib/scoring';
 import { useApp } from '@/store/app';
 import { space, useTheme } from '@/theme/tokens';
@@ -17,19 +19,35 @@ import { space, useTheme } from '@/theme/tokens';
 type Item = { id: string; label: string; hint?: string };
 
 /** Uma vez só: valem para o drone, não para o voo. Não travam a decolagem. */
-const SETUP: (Item & { over250?: boolean })[] = [
-  { id: 'sisant', label: 'Drone cadastrado no SISANT (ANAC)', over250: true },
-  { id: 'seguro', label: 'Seguro RETA válido', hint: 'Uso não recreativo', over250: true },
-  { id: 'anatel', label: 'Drone homologado na Anatel' },
+const SETUP_BR: (Item & { over250?: boolean })[] = [
+  { id: 'sisant', label: t('Drone cadastrado no SISANT (ANAC)'), over250: true },
+  { id: 'seguro', label: t('Seguro RETA válido'), hint: t('Uso não recreativo'), over250: true },
+  { id: 'anatel', label: t('Drone homologado na Anatel') },
+];
+
+/** Fora do Brasil as exigências variam: o item lembra de conferir com a autoridade local. */
+const SETUP_INTL: (Item & { over250?: boolean })[] = [
+  { id: 'registro', label: t('Drone registrado na autoridade local'), hint: t('Se o país exigir') },
+  { id: 'piloto', label: t('Certificado ou curso de piloto'), hint: t('Se o país exigir') },
+  { id: 'seguroLocal', label: t('Seguro de responsabilidade civil'), hint: t('Se o país exigir') },
+];
+
+const COMMON: Item[] = [
+  { id: 'aeronave', label: t('Baterias carregadas e hélices inteiras') },
+  { id: 'area', label: t('Área livre e pessoas a mais de 30 m') },
+  { id: 'home', label: t('Home gravado e RTH acima dos obstáculos') },
+  { id: 'vlos', label: t('Drone sempre à vista (VLOS)') },
 ];
 
 /** A cada voo: o essencial, todos obrigatórios para decolar. */
-const FLIGHT: Item[] = [
-  { id: 'sarpas', label: 'Voo autorizado no SARPAS NG', hint: 'Obrigatório para qualquer drone desde 1º/07/2026' },
-  { id: 'aeronave', label: 'Baterias carregadas e hélices inteiras' },
-  { id: 'area', label: 'Área livre e pessoas a mais de 30 m' },
-  { id: 'home', label: 'Home gravado e RTH acima dos obstáculos' },
-  { id: 'vlos', label: 'Drone sempre à vista (VLOS)' },
+const FLIGHT_BR: Item[] = [
+  { id: 'sarpas', label: t('Voo autorizado no SARPAS NG'), hint: t('Obrigatório para qualquer drone desde 1º/07/2026') },
+  ...COMMON,
+];
+
+const FLIGHT_INTL: Item[] = [
+  { id: 'zona', label: t('Local liberado nas zonas oficiais do país'), hint: t('E autorização obtida, se for exigida') },
+  ...COMMON,
 ];
 
 export default function ChecklistScreen() {
@@ -42,9 +60,12 @@ export default function ChecklistScreen() {
   const setup = useApp((s) => s.setupChecks);
   const toggleSetup = useApp((s) => s.toggleSetup);
   const { location } = useActiveLocation();
-  const { data, drone } = useConditions(location?.lat, location?.lon);
+  const { data, drone } = useConditions(location?.lat, location?.lon, location?.country);
   const [starting, setStarting] = useState(false);
 
+  const region = data?.region ?? (location ? regionAt(location.lat, location.lon, location.country) : 'BR');
+  const SETUP = region === 'BR' ? SETUP_BR : SETUP_INTL;
+  const FLIGHT = region === 'BR' ? FLIGHT_BR : FLIGHT_INTL;
   const setupItems = SETUP.filter((i) => !i.over250 || drone.weightG > 250);
   const setupDone = setupItems.every((i) => setup[i.id]);
   const [editSetup, setEditSetup] = useState(!setupDone);
@@ -61,14 +82,14 @@ export default function ChecklistScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <SheetHeader title="Checklist pré-voo" right={done > 0 ? 'Limpar' : undefined} onRight={reset} modal />
+      <SheetHeader title={t('Checklist pré-voo')} right={done > 0 ? t('Limpar') : undefined} onRight={reset} modal />
       <ScrollView contentContainerStyle={{ padding: space.lg, paddingTop: 0, gap: space.lg, paddingBottom: 140 }}>
         {data ? (
           <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
             <View style={{ flex: 1, gap: 4 }}>
               <T v="headline">{location?.name}</T>
               <T v="footnote" tone="secondary">
-                {drone.brand} {drone.name} · score {data.now.score}
+                {drone.brand} {drone.name} · {t('score {n}', { n: data.now.score })}
               </T>
             </View>
             <StatusPill v={data.now.verdict} label={verdictLabel[data.now.verdict]} small />
@@ -79,7 +100,7 @@ export default function ChecklistScreen() {
         <View style={{ gap: space.sm }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.xs }}>
             <T v="footnote" tone="secondary" style={{ flex: 1, textTransform: 'uppercase' }}>
-              Neste voo
+              {t('Neste voo')}
             </T>
             {done < FLIGHT.length ? (
               <Pressable
@@ -90,7 +111,7 @@ export default function ChecklistScreen() {
                 }}
                 accessibilityRole="button">
                 <T v="footnote" tone="accent" style={{ fontWeight: '600' }}>
-                  Marcar tudo
+                  {t('Marcar tudo')}
                 </T>
               </Pressable>
             ) : null}
@@ -105,21 +126,21 @@ export default function ChecklistScreen() {
         {/* ------------------------------------------------ Uma vez só */}
         {setupItems.length > 0 ? (
           setupDone && !editSetup ? (
-            <Pressable onPress={() => setEditSetup(true)} accessibilityRole="button" accessibilityLabel="Editar documentação do drone">
+            <Pressable onPress={() => setEditSetup(true)} accessibilityRole="button" accessibilityLabel={t('Editar documentação do drone')}>
               <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                 <Icon name="check" size={20} color={c.go} />
                 <T v="subhead" tone="secondary" style={{ flex: 1 }}>
-                  Documentação do drone em dia
+                  {t('Documentação do drone em dia')}
                 </T>
                 <T v="subhead" tone="accent">
-                  Editar
+                  {t('Editar')}
                 </T>
               </Card>
             </Pressable>
           ) : (
             <View style={{ gap: space.sm }}>
               <T v="footnote" tone="secondary" style={{ paddingHorizontal: space.xs, textTransform: 'uppercase' }}>
-                Uma vez só · fica salvo
+                {t('Uma vez só · fica salvo')}
               </T>
               <Card padded={false}>
                 {setupItems.map((it, i) => (
@@ -146,9 +167,9 @@ export default function ChecklistScreen() {
           gap: space.sm,
         }}>
         <T v="footnote" tone="secondary" num style={{ textAlign: 'center' }}>
-          {done} de {FLIGHT.length} itens deste voo
+          {t('{done} de {total} itens deste voo', { done, total: FLIGHT.length })}
         </T>
-        <Button title="Decolar" icon="flight" onPress={takeoff} disabled={!ready} loading={starting} />
+        <Button title={t('Decolar')} icon="flight" onPress={takeoff} disabled={!ready} loading={starting} />
       </View>
     </View>
   );

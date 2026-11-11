@@ -1,6 +1,8 @@
 import { View } from 'react-native';
 import Svg, { Circle, G, Line, Text as SvgText } from 'react-native-svg';
 
+import { t } from '@/i18n';
+import { CARDINAL4 } from '@/lib/format';
 import { CONSTELLATIONS, type SatPosition } from '@/lib/gnss';
 import { useConstellationColors, useTheme } from '@/theme/tokens';
 
@@ -23,7 +25,7 @@ export function SkyPlot({ sats, mask, size }: { sats: SatPosition[]; mask: numbe
   const DOT = 15;
 
   return (
-    <View accessible accessibilityLabel={`Carta do céu com ${sats.filter((s) => s.elevation >= mask).length} satélites acima de ${mask} graus`}>
+    <View accessible accessibilityLabel={t('Carta do céu com {n} satélites acima de {mask} graus', { n: sats.filter((s) => s.elevation >= mask).length, mask })}>
       <Svg width={size} height={size}>
         {/* Anéis de elevação 0/30/60 e máscara */}
         {[0, 30, 60].map((el) => (
@@ -32,12 +34,7 @@ export function SkyPlot({ sats, mask, size }: { sats: SatPosition[]; mask: numbe
         <Circle cx={cx} cy={cx} r={r * (1 - mask / 90)} stroke={c.tertiary} strokeWidth={1} strokeDasharray="4 4" fill="none" />
         <Line x1={cx} y1={cx - r} x2={cx} y2={cx + r} stroke={c.separator} />
         <Line x1={cx - r} y1={cx} x2={cx + r} y2={cx} stroke={c.separator} />
-        {[
-          ['N', 0],
-          ['L', 90],
-          ['S', 180],
-          ['O', 270],
-        ].map(([l, az]) => {
+        {CARDINAL4.map((l, i) => [l, i * 90] as const).map(([l, az]) => {
           const p = toXY(az as number, -12);
           return (
             <SvgText key={l as string} x={p.x} y={p.y + 4} fill={c.secondary} fontSize={11} fontWeight="600" textAnchor="middle">

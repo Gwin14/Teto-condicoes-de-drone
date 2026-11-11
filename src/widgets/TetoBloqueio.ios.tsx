@@ -38,7 +38,7 @@ const TetoBloqueio = (props: ConditionsWidgetProps, env: WidgetEnvironment) => {
         <Text modifiers={[font({ size: 15, weight: 'bold' }), lineLimit(1)]}>{`${props.verdictShort} · ${props.score}`}</Text>
       </HStack>
       <Text modifiers={[font({ size: 13 }), monospacedDigit(), lineLimit(1)]}>
-        {`${props.wind} ${props.unit} ${props.dir} · raj ${props.gust}`}
+        {`${props.wind} ${props.unit} ${props.dir} · ${props.l?.gust ?? 'raj'} ${props.gust}`}
       </Text>
       <Text modifiers={[font({ size: 13 }), lineLimit(1)]}>{props.next}</Text>
     </VStack>

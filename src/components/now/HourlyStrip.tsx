@@ -2,6 +2,7 @@ import { ScrollView, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { Card, T } from '@/components/ui';
+import { t } from '@/i18n';
 import { convertSpeed, fmtHour, type SpeedUnit, speedUnitLabel } from '@/lib/format';
 import type { HourScore } from '@/lib/scoring';
 import { weatherIcon } from '@/lib/weather';
@@ -25,9 +26,9 @@ export function HourlyStrip({ hours, unit }: { hours: HourScore[]; unit: SpeedUn
               key={h.hour.time.getTime()}
               style={{ width: 46, alignItems: 'center', gap: 8 }}
               accessible
-              accessibilityLabel={`${fmtHour(h.hour.time)}: score ${h.score}, vento ${Math.round(convertSpeed(h.windAlt, unit))} ${speedUnitLabel[unit]}`}>
+              accessibilityLabel={t('{hour}: score {score}, vento {wind}', { hour: fmtHour(h.hour.time), score: h.score, wind: `${Math.round(convertSpeed(h.windAlt, unit))} ${speedUnitLabel[unit]}` })}>
               <T v="caption" tone={i === 0 ? 'label' : 'secondary'} style={{ fontWeight: i === 0 ? '700' : '500' }} num>
-                {i === 0 ? 'Agora' : fmtHour(h.hour.time)}
+                {i === 0 ? t('Agora') : fmtHour(h.hour.time)}
               </T>
               <Icon name={weatherIcon(h.hour.code, h.hour.isDay)} size={18} color={c.secondary} />
               <View
@@ -50,10 +51,10 @@ export function HourlyStrip({ hours, unit }: { hours: HourScore[]; unit: SpeedUn
       </ScrollView>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.lg, paddingBottom: space.md }}>
         <T v="caption" tone="tertiary">
-          Barra = score de voo
+          {t('Barra = score de voo')}
         </T>
         <T v="caption" tone="tertiary">
-          Vento em {speedUnitLabel[unit]}
+          {t('Vento em {unit}', { unit: speedUnitLabel[unit] })}
         </T>
       </View>
     </Card>

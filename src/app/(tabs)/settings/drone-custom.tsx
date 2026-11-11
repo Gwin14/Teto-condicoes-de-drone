@@ -5,6 +5,7 @@ import { ScrollView, Switch, TextInput, View } from 'react-native';
 
 import { Button, Card, T } from '@/components/ui';
 import type { DroneProfile } from '@/lib/drones';
+import { t } from '@/i18n';
 import { speedUnitLabel, toKmh, convertSpeed } from '@/lib/format';
 import { useApp } from '@/store/app';
 import { radius, space, useTheme } from '@/theme/tokens';
@@ -18,8 +19,8 @@ export default function DroneCustomScreen() {
   const set = useApp((s) => s.set);
   const base: DroneProfile = custom ?? {
     id: 'custom',
-    name: 'Meu drone',
-    brand: 'Personalizado',
+    name: t('Meu drone'),
+    brand: t('Personalizado'),
     maxWind: 38,
     flightTime: 30,
     cruiseSpeed: 36,
@@ -44,24 +45,24 @@ export default function DroneCustomScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fields: Field[] = [
-    { key: 'maxWind', label: 'Resistência ao vento', suffix: speedUnitLabel[unit], hint: 'Veja “Max Wind Speed Resistance” no manual' },
-    { key: 'flightTime', label: 'Autonomia nominal', suffix: 'min' },
-    { key: 'cruiseSpeed', label: 'Velocidade de cruzeiro', suffix: speedUnitLabel[unit] },
-    { key: 'weightG', label: 'Peso de decolagem', suffix: 'g' },
-    { key: 'minTemp', label: 'Temperatura mínima', suffix: '°C' },
-    { key: 'maxTemp', label: 'Temperatura máxima', suffix: '°C' },
+    { key: 'maxWind', label: t('Resistência ao vento'), suffix: speedUnitLabel[unit], hint: t('Veja “Max Wind Speed Resistance” no manual') },
+    { key: 'flightTime', label: t('Autonomia nominal'), suffix: 'min' },
+    { key: 'cruiseSpeed', label: t('Velocidade de cruzeiro'), suffix: speedUnitLabel[unit] },
+    { key: 'weightG', label: t('Peso de decolagem'), suffix: 'g' },
+    { key: 'minTemp', label: t('Temperatura mínima'), suffix: '°C' },
+    { key: 'maxTemp', label: t('Temperatura máxima'), suffix: '°C' },
   ];
 
   const save = () => {
     const v = values.current;
     const num = (k: string) => Number(String(v[k]).replace(',', '.'));
     const errs: Record<string, string> = {};
-    if (!v.name?.trim()) errs.name = 'Dê um nome ao drone';
+    if (!v.name?.trim()) errs.name = t('Dê um nome ao drone');
     for (const f of fields) {
-      if (!Number.isFinite(num(f.key)) || String(v[f.key]).trim() === '') errs[f.key] = 'Informe um número';
+      if (!Number.isFinite(num(f.key)) || String(v[f.key]).trim() === '') errs[f.key] = t('Informe um número');
     }
-    if (num('maxWind') <= 0) errs.maxWind = 'Precisa ser maior que zero';
-    if (num('flightTime') <= 0) errs.flightTime = 'Precisa ser maior que zero';
+    if (num('maxWind') <= 0) errs.maxWind = t('Precisa ser maior que zero');
+    if (num('flightTime') <= 0) errs.flightTime = t('Precisa ser maior que zero');
     setErrors(errs);
     if (Object.keys(errs).length) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
@@ -71,7 +72,7 @@ export default function DroneCustomScreen() {
     const profile: DroneProfile = {
       id: 'custom',
       name: v.name.trim(),
-      brand: 'Personalizado',
+      brand: t('Personalizado'),
       maxWind: toKmh(num('maxWind'), unit),
       flightTime: num('flightTime'),
       cruiseSpeed: toKmh(num('cruiseSpeed'), unit),
@@ -90,8 +91,8 @@ export default function DroneCustomScreen() {
   const input = (key: string, props: Partial<React.ComponentProps<typeof TextInput>> = {}) => (
     <TextInput
       defaultValue={initial[key]}
-      onChangeText={(t) => {
-        values.current[key] = t;
+      onChangeText={(text) => {
+        values.current[key] = text;
       }}
       placeholderTextColor={c.tertiary}
       style={{ fontSize: 17, color: c.label, paddingVertical: 10, textAlign: 'right', minWidth: 80, fontVariant: ['tabular-nums'] }}
@@ -108,15 +109,15 @@ export default function DroneCustomScreen() {
       contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: 80 }}>
       <View style={{ gap: space.sm }}>
         <T v="footnote" tone="secondary" style={{ paddingHorizontal: space.xs, textTransform: 'uppercase' }}>
-          Nome
+          {t('Nome')}
         </T>
         <Card style={{ paddingVertical: 0 }}>
           <TextInput
             defaultValue={initial.name}
-            onChangeText={(t) => {
-              values.current.name = t;
+            onChangeText={(text) => {
+              values.current.name = text;
             }}
-            placeholder="Ex.: Meu FPV 5 polegadas"
+            placeholder={t('Ex.: Meu FPV 5 polegadas')}
             placeholderTextColor={c.tertiary}
             autoCapitalize="sentences"
             returnKeyType="done"
@@ -132,7 +133,7 @@ export default function DroneCustomScreen() {
 
       <View style={{ gap: space.sm }}>
         <T v="footnote" tone="secondary" style={{ paddingHorizontal: space.xs, textTransform: 'uppercase' }}>
-          Especificações
+          {t('Especificações')}
         </T>
         <Card padded={false}>
           {fields.map((f, i) => (
@@ -172,15 +173,15 @@ export default function DroneCustomScreen() {
 
       <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, borderRadius: radius.card }}>
         <View style={{ flex: 1 }}>
-          <T v="body">Resistente à chuva</T>
+          <T v="body">{t('Resistente à chuva')}</T>
           <T v="footnote" tone="secondary">
-            Certificação IP45 ou superior
+            {t('Certificação IP45 ou superior')}
           </T>
         </View>
         <Switch value={rainProof} onValueChange={setRainProof} trackColor={{ true: c.go }} />
       </Card>
 
-      <Button title="Salvar e usar este drone" onPress={save} />
+      <Button title={t('Salvar e usar este drone')} onPress={save} />
     </ScrollView>
   );
 }

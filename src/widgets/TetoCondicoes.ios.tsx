@@ -91,7 +91,7 @@ const TetoCondicoes = (props: ConditionsWidgetProps, env: WidgetEnvironment) => 
           <Wind />
         </VStack>
         <VStack alignment="trailing" spacing={8}>
-          <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(SECONDARY)]}>PRÓXIMAS HORAS</Text>
+          <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundStyle(SECONDARY)]}>{props.l?.next ?? 'PRÓXIMAS HORAS'}</Text>
           <Spacer />
           <Bars count={6} height={64} />
         </VStack>
@@ -109,11 +109,11 @@ const TetoCondicoes = (props: ConditionsWidgetProps, env: WidgetEnvironment) => 
           <Bars count={6} height={56} />
         </HStack>
         <VStack spacing={8}>
-          <Stat icon="wind" label={`Vento a ${props.altitude} m`} value={`${props.wind} ${props.unit} ${props.dir}`} />
-          <Stat icon="tornado" label="Rajadas" value={`${props.gust} ${props.unit}`} />
-          <Stat icon="cloud.rain.fill" label="Chuva" value={props.rain} />
-          <Stat icon="thermometer.medium" label="Temperatura" value={props.temp} />
-          <Stat icon="antenna.radiowaves.left.and.right" label="Índice Kp" value={props.kp} />
+          <Stat icon="wind" label={props.l?.windAt ?? `Vento a ${props.altitude} m`} value={`${props.wind} ${props.unit} ${props.dir}`} />
+          <Stat icon="tornado" label={props.l?.gusts ?? 'Rajadas'} value={`${props.gust} ${props.unit}`} />
+          <Stat icon="cloud.rain.fill" label={props.l?.rain ?? 'Chuva'} value={props.rain} />
+          <Stat icon="thermometer.medium" label={props.l?.temp ?? 'Temperatura'} value={props.temp} />
+          <Stat icon="antenna.radiowaves.left.and.right" label={props.l?.kp ?? 'Índice Kp'} value={props.kp} />
         </VStack>
         <Spacer />
         <HStack spacing={6}>

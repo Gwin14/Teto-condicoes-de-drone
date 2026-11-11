@@ -1,13 +1,17 @@
 import { FlashList } from '@shopify/flash-list';
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { Segmented } from '@/components/Segmented';
-import { Card, EmptyState, Skeleton, StatusDot, T } from '@/components/ui';
+import { ProBadge } from '@/components/ProBadge';
+import { Button, Card, EmptyState, Skeleton, StatusDot, T } from '@/components/ui';
 import { type Conditions, useConditions } from '@/hooks/useConditions';
 import { useActiveLocation } from '@/hooks/useLocation';
+import { t } from '@/i18n';
+import { useIsPro } from '@/lib/purchases';
 import { cardinal, convertSpeed, fmtHour, fmtShortDate, fmtTemp, fmtTime, fmtWeekday, speedUnitLabel, type SpeedUnit, type TempUnit } from '@/lib/format';
 import type { HourScore } from '@/lib/scoring';
 import { weatherIcon } from '@/lib/weather';
@@ -20,14 +24,15 @@ export default function ForecastScreen() {
   const { c } = useTheme();
   const [tab, setTab] = useState(0);
   const { location } = useActiveLocation();
-  const { data, isLoading, error, refetch, altitude } = useConditions(location?.lat, location?.lon);
+  const { data, isLoading, error, refetch, altitude } = useConditions(location?.lat, location?.lon, location?.country);
   const unit = useApp((s) => s.speedUnit);
   const tempUnit = useApp((s) => s.tempUnit);
+  const isPro = useIsPro();
 
   const header = (
     <View style={{ paddingHorizontal: space.lg, paddingBottom: space.md, gap: space.md }}>
       <Segmented
-        values={['Por hora', '7 dias']}
+        values={[t('Por hora'), t('7 dias')]}
         selectedIndex={tab}
         onChange={(e) => {
           Haptics.selectionAsync().catch(() => {});
@@ -39,29 +44,29 @@ export default function ForecastScreen() {
         <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center', backgroundColor: c.cautionSoft, borderRadius: radius.inner, borderCurve: 'continuous', padding: space.md }}>
           <Icon name="airport" size={16} color={c.caution} />
           <T v="footnote" style={{ flex: 1 }}>
-            Os scores incluem a zona estimada de {data.airspace.nearest.icao}: aqui o voo exige autorização no SARPAS.
+            {t('Os scores incluem a zona estimada de {icao}: aqui o voo exige autorização no SARPAS.', { icao: data.airspace.nearest.icao })}
           </T>
         </View>
       ) : null}
       {data && tab === 0 ? (
         <View style={{ flexDirection: 'row', paddingHorizontal: space.md }}>
           <T v="caption2" tone="tertiary" style={{ width: 56 }}>
-            HORA
+            {t('HORA')}
           </T>
           <T v="caption2" tone="tertiary" style={{ flex: 1 }}>
-            SCORE
+            {t('SCORE')}
           </T>
           <T v="caption2" tone="tertiary" style={{ width: 74, textAlign: 'right' }}>
-            {`VENTO ${altitude} M`}
+            {t('VENTO {alt} M', { alt: altitude })}
           </T>
           <T v="caption2" tone="tertiary" style={{ width: 52, textAlign: 'right' }}>
-            RAJ.
+            {t('RAJ.')}
           </T>
           <T v="caption2" tone="tertiary" style={{ width: 44, textAlign: 'right' }}>
-            CHUVA
+            {t('CHUVA')}
           </T>
           <T v="caption2" tone="tertiary" style={{ width: 40, textAlign: 'right' }}>
-            TEMP
+            {t('TEMP')}
           </T>
         </View>
       ) : null}
@@ -87,9 +92,9 @@ export default function ForecastScreen() {
         <EmptyState
           icon="cloud"
           tone="nogo"
-          title="Previsão indisponível"
-          message={error?.message ?? 'Verifique sua conexão.'}
-          action="Tentar de novo"
+          title={t('Previsão indisponível')}
+          message={error?.message ?? t('Verifique sua conexão.')}
+          action={t('Tentar de novo')}
           onAction={() => refetch()}
         />
       </ScrollView>
@@ -103,7 +108,22 @@ export default function ForecastScreen() {
         style={{ backgroundColor: c.background }}
         contentContainerStyle={{ paddingBottom: space.xxxl * 2 }}>
         {header}
-        <DaysView data={data} unit={unit} tempUnit={tempUnit} />
+        {isPro ? (
+          <DaysView data={data} unit={unit} tempUnit={tempUnit} />
+        ) : (
+          <View style={{ paddingHorizontal: space.lg }}>
+            <Card style={{ alignItems: 'center', gap: space.md, paddingVertical: space.xxl }}>
+              <ProBadge />
+              <T v="title3" style={{ textAlign: 'center' }}>
+                {t('Previsão de 7 dias')}
+              </T>
+              <T v="subhead" tone="secondary" style={{ textAlign: 'center', maxWidth: 300 }}>
+                {t('Veja as horas boas para voar em cada dia da semana e planeje a saída com antecedência.')}
+              </T>
+              <Button title={t('Conhecer o Teto Pro')} onPress={() => router.push('/paywall')} style={{ alignSelf: 'stretch' }} />
+            </Card>
+          </View>
+        )}
       </ScrollView>
     );
   }
@@ -136,7 +156,7 @@ export default function ForecastScreen() {
               {fmtWeekday(item.date)} · {fmtShortDate(item.date)}
             </T>
             <T v="footnote" tone={item.good > 0 ? 'go' : 'tertiary'} num>
-              {item.good > 0 ? `${item.good} h boas` : 'Sem horas boas'}
+              {item.good > 0 ? t('{n} h boas', { n: item.good }) : t('Sem horas boas')}
             </T>
           </View>
         ) : (
@@ -218,7 +238,7 @@ function DaysView({ data, unit, tempUnit }: { data: Conditions; unit: SpeedUnit;
               <View style={{ flex: 1 }}>
                 <T v="headline">{fmtWeekday(d.date)}</T>
                 <T v="footnote" tone="secondary" num>
-                  {fmtTemp(d.tMin, tempUnit)} / {fmtTemp(d.tMax, tempUnit)} · rajadas até {Math.round(convertSpeed(d.gustMax, unit))} {speedUnitLabel[unit]}
+                  {fmtTemp(d.tMin, tempUnit)} / {fmtTemp(d.tMax, tempUnit)} · {t('rajadas até {speed}', { speed: `${Math.round(convertSpeed(d.gustMax, unit))} ${speedUnitLabel[unit]}` })}
                 </T>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
@@ -226,7 +246,7 @@ function DaysView({ data, unit, tempUnit }: { data: Conditions; unit: SpeedUnit;
                   {good.length} h
                 </T>
                 <T v="caption2" tone="tertiary">
-                  BOAS
+                  {t('BOAS')}
                 </T>
               </View>
             </View>
@@ -271,7 +291,7 @@ function DaysView({ data, unit, tempUnit }: { data: Conditions; unit: SpeedUnit;
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
                   <StatusDot v={best.verdict} />
                   <T v="footnote" num>
-                    Melhor: {fmtHour(best.hour.time)} ({best.score})
+                    {t('Melhor: {hour} ({score})', { hour: fmtHour(best.hour.time), score: best.score })}
                   </T>
                 </View>
               ) : null}

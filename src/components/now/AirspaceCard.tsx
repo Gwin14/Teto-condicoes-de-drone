@@ -4,15 +4,22 @@ import { View } from 'react-native';
 import { Icon } from '@/components/Icon';
 import { Button, Card, StatusPill, T } from '@/components/ui';
 import { useMetar } from '@/hooks/useConditions';
+import { t } from '@/i18n';
 import { kindLabel, type NearbyAirport } from '@/lib/airports';
 import { cardinal, fmtDistance, fmtSpeed, fmtTime, type SpeedUnit } from '@/lib/format';
+import { authorityFor, type Region } from '@/lib/region';
 import { space, useTheme } from '@/theme/tokens';
 
 const catColor = { VFR: 'go', MVFR: 'caution', IFR: 'nogo', LIFR: 'nogo' } as const;
 
-/** Espaço aéreo: aeródromos cadastrados próximos, afastamento do DECEA e METAR decodificado. */
-export function AirspaceCard({ airports, unit }: { airports: NearbyAirport[]; unit: SpeedUnit }) {
+/**
+ * Espaço aéreo: aeródromos próximos e METAR decodificado.
+ * Brasil: cadastro da ANAC e afastamento do DECEA. Fora: aeroportos do aviationweather.gov e a autoridade local.
+ */
+export function AirspaceCard({ airports, unit, region, country }: { airports: NearbyAirport[]; unit: SpeedUnit; region: Region; country?: string }) {
   const { c } = useTheme();
+  const br = region === 'BR';
+  const authority = authorityFor(country);
   const icaos = airports.slice(0, 3).map((a) => a.icao);
   const metar = useMetar(icaos);
   const nearest = airports[0];
@@ -38,12 +45,12 @@ export function AirspaceCard({ airports, unit }: { airports: NearbyAirport[]; un
                     {a.icao} · {a.name}
                   </T>
                   <T v="footnote" tone="secondary" num>
-                    {fmtDistance(a.distance)} a {cardinal(a.bearing)} · {kindLabel[a.kind]}
+                    {t('{dist} a {dir}', { dist: fmtDistance(a.distance), dir: cardinal(a.bearing) })} · {kindLabel[a.kind]}
                     {a.city ? ` · ${a.city}` : ''}
                   </T>
                 </View>
                 {a.zone !== 'clear' ? (
-                  <StatusPill v={a.zone === 'critical' ? 'nogo' : 'caution'} label={a.zone === 'critical' ? 'Restrita' : 'Até 30 m'} small />
+                  <StatusPill v={a.zone === 'critical' ? 'nogo' : 'caution'} label={a.zone === 'critical' ? t('Restrita') : br ? t('Até 30 m') : t('Perto')} small />
                 ) : null}
               </View>
               {m ? (
@@ -51,8 +58,12 @@ export function AirspaceCard({ airports, unit }: { airports: NearbyAirport[]; un
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                     {m.category ? <StatusPill v={catColor[m.category]} label={m.category} small /> : null}
                     <T v="footnote" tone="secondary" num>
-                      {m.windKt != null ? `Vento ${fmtSpeed(m.windKt * 1.852, unit)}${m.windDir != null ? ` de ${cardinal(m.windDir)}` : ''}` : ''}
-                      {m.gustKt ? ` · raj. ${fmtSpeed(m.gustKt * 1.852, unit)}` : ''}
+                      {m.windKt != null
+                        ? m.windDir != null
+                          ? t('Vento {speed} de {dir}', { speed: fmtSpeed(m.windKt * 1.852, unit), dir: cardinal(m.windDir) })
+                          : t('Vento {speed}', { speed: fmtSpeed(m.windKt * 1.852, unit) })
+                        : ''}
+                      {m.gustKt ? ` · ${t('raj.')} ${fmtSpeed(m.gustKt * 1.852, unit)}` : ''}
                       {` · ${fmtTime(m.obsTime)}`}
                     </T>
                   </View>
@@ -68,19 +79,24 @@ export function AirspaceCard({ airports, unit }: { airports: NearbyAirport[]; un
         <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
           <Icon name="check" size={22} color={c.go} />
           <T v="subhead" tone="secondary" style={{ flex: 1 }}>
-            Nenhum aeródromo cadastrado na ANAC num raio de 60 km. Ainda assim, confira helipontos e áreas restritas no SARPAS.
+            {br
+              ? t('Nenhum aeródromo cadastrado na ANAC num raio de 60 km. Ainda assim, confira helipontos e áreas restritas no SARPAS.')
+              : process.env.EXPO_OS === 'web'
+                ? t('A lista de aeroportos fora do Brasil só carrega no app do celular.')
+                : t('Nenhum aeroporto encontrado num raio de 60 km. Ainda assim, confira helipontos, pistas pequenas e zonas restritas nas regras locais.')}
           </T>
         </View>
       )}
       <T v="caption" tone="tertiary">
-        Aeródromos: cadastro da ANAC. Afastamento: ICA 100-40 (3 NM até 30 m, 5 NM até 120 m). Todo voo precisa de autorização no SARPAS NG.
+        {br
+          ? t('Aeródromos: cadastro da ANAC. Afastamento: ICA 100-40 (3 NM até 30 m, 5 NM até 120 m). Todo voo precisa de autorização no SARPAS NG.')
+          : t('Aeroportos: aviationweather.gov (pode não incluir pistas pequenas e helipontos). O círculo de 5 NM é um alerta, não a regra local: confira zonas e autorizações com a autoridade do país.')}
       </T>
-      <Button
-        title="Abrir SARPAS NG"
-        kind="secondary"
-        icon="link"
-        onPress={() => WebBrowser.openBrowserAsync('https://sarpas.decea.mil.br')}
-      />
+      {br ? (
+        <Button title={t('Abrir SARPAS NG')} kind="secondary" icon="link" onPress={() => WebBrowser.openBrowserAsync('https://sarpas.decea.mil.br')} />
+      ) : authority ? (
+        <Button title={authority.name} kind="secondary" icon="link" onPress={() => WebBrowser.openBrowserAsync(authority.url)} />
+      ) : null}
     </Card>
   );
 }

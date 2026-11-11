@@ -16,7 +16,9 @@ import { NowSkeleton } from '@/components/now/NowSkeleton';
 import { Card, EmptyState, InlineError, SectionHeader, T } from '@/components/ui';
 import { useConditions } from '@/hooks/useConditions';
 import { useActiveLocation } from '@/hooks/useLocation';
+import { t } from '@/i18n';
 import { fmtRelative } from '@/lib/format';
+import { openPro } from '@/lib/purchases';
 import { weatherLabel } from '@/lib/weather';
 import { useApp } from '@/store/app';
 import { space, useTheme } from '@/theme/tokens';
@@ -24,7 +26,7 @@ import { space, useTheme } from '@/theme/tokens';
 export default function NowScreen() {
   const { c } = useTheme();
   const { location, gps, retry } = useActiveLocation();
-  const { data, drone, altitude, isLoading, error, kpError, refetch } = useConditions(location?.lat, location?.lon);
+  const { data, drone, altitude, isLoading, error, kpError, refetch } = useConditions(location?.lat, location?.lon, location?.country);
   const unit = useApp((s) => s.speedUnit);
   const tempUnit = useApp((s) => s.tempUnit);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,13 +43,13 @@ export default function NowScreen() {
       onPress={() => router.push('/location')}
       hitSlop={10}
       accessibilityRole="button"
-      accessibilityLabel="Escolher local"
+      accessibilityLabel={t('Escolher local')}
       style={({ pressed }) => ({ opacity: pressed ? 0.4 : 1, padding: 4 })}>
       <Icon name={location?.source === 'place' ? 'pin' : 'location'} size={20} color={c.accent} />
     </Pressable>
   );
 
-  const title = location?.name ?? 'Agora';
+  const title = location?.name ?? t('Agora');
 
   let body: React.ReactNode;
   if (!location) {
@@ -55,11 +57,11 @@ export default function NowScreen() {
       body = (
         <EmptyState
           icon="location"
-          title="Onde você vai voar?"
-          message="Permita a localização para ver as condições exatamente onde você está, ou escolha uma cidade ou ponto de voo."
-          action="Escolher local"
+          title={t('Onde você vai voar?')}
+          message={t('Permita a localização para ver as condições exatamente onde você está, ou escolha uma cidade ou ponto de voo.')}
+          action={t('Escolher local')}
           onAction={() => router.push('/location')}
-          secondary="Tentar localização de novo"
+          secondary={t('Tentar localização de novo')}
           onSecondary={retry}
         />
       );
@@ -68,11 +70,11 @@ export default function NowScreen() {
         <EmptyState
           icon="warning"
           tone="nogo"
-          title="Não encontramos você"
-          message="O GPS não respondeu. Verifique se a localização está ativa ou escolha um local manualmente."
-          action="Escolher local"
+          title={t('Não encontramos você')}
+          message={t('O GPS não respondeu. Verifique se a localização está ativa ou escolha um local manualmente.')}
+          action={t('Escolher local')}
           onAction={() => router.push('/location')}
-          secondary="Tentar de novo"
+          secondary={t('Tentar de novo')}
           onSecondary={retry}
         />
       );
@@ -86,9 +88,9 @@ export default function NowScreen() {
       <EmptyState
         icon="cloud"
         tone="nogo"
-        title="Sem dados de previsão"
-        message={`Não foi possível falar com o serviço meteorológico (${error.message}). Confira sua conexão.`}
-        action="Tentar de novo"
+        title={t('Sem dados de previsão')}
+        message={t('Não foi possível falar com o serviço meteorológico ({error}). Confira sua conexão.', { error: error.message })}
+        action={t('Tentar de novo')}
         onAction={() => refetch()}
       />
     );
@@ -97,69 +99,71 @@ export default function NowScreen() {
       <View style={{ gap: space.lg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.xs, marginTop: -space.sm }}>
           <T v="footnote" tone="secondary" numberOfLines={1} style={{ flexShrink: 1 }}>
-            {[location.detail, weatherLabel(data.forecast.current.code), `atualizado ${fmtRelative(data.forecast.fetchedAt)}`]
+            {[location.detail, weatherLabel(data.forecast.current.code), t('atualizado {when}', { when: fmtRelative(data.forecast.fetchedAt) })]
               .filter(Boolean)
               .join(' · ')}
           </T>
         </View>
 
-        {error ? <InlineError message="Mostrando a última previsão salva — falha ao atualizar." onRetry={() => refetch()} /> : null}
+        {error ? <InlineError message={t('Mostrando a última previsão salva — falha ao atualizar.')} onRetry={() => refetch()} /> : null}
 
         <HeroCard data={data} drone={drone} altitude={altitude} unit={unit} />
 
         <View>
-          <SectionHeader title="Próximas 24 horas" icon="timer" action="Previsão" onAction={() => router.navigate('/forecast')} />
+          <SectionHeader title={t('Próximas 24 horas')} icon="timer" action={t('Previsão')} onAction={() => router.navigate('/forecast')} />
           <HourlyStrip hours={data.hours} unit={unit} />
         </View>
 
         <View>
-          <SectionHeader title="Janelas de tempo ideal" icon="sparkle" />
+          <SectionHeader title={t('Janelas de tempo ideal')} icon="sparkle" />
           <WindowCard
             windows={data.windows}
             place={location.name}
             restrictedBy={data.airspace.status === 'critical' ? data.airspace.nearest?.icao : undefined}
+            region={data.region}
           />
         </View>
 
         <View>
-          <SectionHeader title="Fatores de voo" icon="checklist" />
+          <SectionHeader title={t('Fatores de voo')} icon="checklist" />
           <FactorsCard factors={data.now.factors} />
           {kpError ? (
             <T v="caption" tone="tertiary" style={{ marginTop: space.sm, paddingHorizontal: space.xs }}>
-              Índice Kp indisponível no momento — usando 0 como referência.
+              {t('Índice Kp indisponível no momento — usando 0 como referência.')}
             </T>
           ) : null}
         </View>
 
         <View>
-          <SectionHeader title="Satélites e interferência" icon="satellite" action="Detalhes" onAction={() => router.push('/gnss')} />
+          <SectionHeader title={t('Satélites e interferência')} icon="satellite" action={t('Detalhes')} onAction={() => openPro('/gnss')} />
           <GnssCard lat={data.forecast.lat} lon={data.forecast.lon} elevation={data.forecast.elevation} kp={data.now.kp} />
         </View>
 
         <View>
-          <SectionHeader title="Vento por altitude" icon="altitude" />
+          <SectionHeader title={t('Vento por altitude')} icon="altitude" />
           <WindProfileCard hour={data.forecast.current} drone={drone} altitude={altitude} unit={unit} />
         </View>
 
         <View>
-          <SectionHeader title="Condições" icon="gauge" />
+          <SectionHeader title={t('Condições')} icon="gauge" />
           <MetricsGrid data={data} tempUnit={tempUnit} />
         </View>
 
         <View>
-          <SectionHeader title="Luz" icon="sun" />
+          <SectionHeader title={t('Luz')} icon="sun" />
           <SunCard lat={location.lat} lon={location.lon} />
         </View>
 
         <View>
-          <SectionHeader title="Espaço aéreo" icon="airport" />
-          <AirspaceCard airports={data.airports} unit={unit} />
+          <SectionHeader title={t('Espaço aéreo')} icon="airport" />
+          <AirspaceCard airports={data.airports} unit={unit} region={data.region} country={location.country} />
         </View>
 
         <Card style={{ backgroundColor: 'transparent', paddingHorizontal: space.xs }}>
           <T v="caption" tone="tertiary">
-            O Teto é uma ferramenta de apoio. Antes de voar, confirme a autorização no SARPAS (DECEA), o cadastro no SISANT
-            (ANAC) e a homologação na Anatel. Dados: Open-Meteo, NOAA SWPC, CelesTrak, aviationweather.gov, ANAC (aeródromos) e INPE/EMBRACE (cintilação).
+            {data.region === 'BR'
+              ? t('O Teto é uma ferramenta de apoio. Antes de voar, confirme a autorização no SARPAS (DECEA), o cadastro no SISANT (ANAC) e a homologação na Anatel. Dados: Open-Meteo, NOAA SWPC, CelesTrak, aviationweather.gov, ANAC (aeródromos) e INPE/EMBRACE (cintilação).')
+              : t('O Teto é uma ferramenta de apoio. Antes de voar, confira as regras, as zonas restritas e as autorizações exigidas pela autoridade de aviação do país. Dados: Open-Meteo, NOAA SWPC, CelesTrak, aviationweather.gov e INPE/EMBRACE (cintilação).')}
           </T>
         </Card>
       </View>

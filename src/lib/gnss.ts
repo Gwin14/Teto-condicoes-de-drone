@@ -6,6 +6,8 @@
  * satélites acima da máscara e estimar a geometria (DOP). Não substitui o receptor
  * do drone, que vê obstruções reais (prédios, árvores, relevo).
  */
+import { fmtNum } from '@/i18n';
+
 
 export type Constellation = 'gps' | 'galileo' | 'glonass' | 'beidou';
 
@@ -82,7 +84,7 @@ export async function fetchAllConstellations(signal?: AbortSignal) {
   const results = await Promise.allSettled(CONSTELLATIONS.map((c) => fetchConstellation(c, signal)));
   const sats = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
   const failed = CONSTELLATIONS.filter((_, i) => results[i].status === 'rejected').map((c) => c.id);
-  if (sats.length === 0) throw new Error('Elementos orbitais indisponíveis');
+  if (sats.length === 0) throw new Error('CelesTrak: no orbital elements');
   return { sats, failed, fetchedAt: Date.now() };
 }
 
@@ -221,5 +223,5 @@ export function snapshot(sats: OrbitalElements[], lat: number, lon: number, hM: 
 }
 
 export function fmtDop(v: number) {
-  return Number.isFinite(v) ? v.toFixed(1).replace('.', ',') : '—';
+  return fmtNum(v, 1);
 }

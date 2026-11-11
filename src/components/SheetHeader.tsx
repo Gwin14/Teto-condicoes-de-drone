@@ -3,13 +3,14 @@ import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { space, useTheme } from '@/theme/tokens';
+import { t } from '@/i18n';
 
 import { T } from './ui';
 
 /** Cabeçalho de modal/sheet com ação explícita (Cancelar/OK), padrão iOS. */
 export function SheetHeader({
   title,
-  left = 'Cancelar',
+  left = t('Cancelar'),
   right,
   onRight,
   onLeft,

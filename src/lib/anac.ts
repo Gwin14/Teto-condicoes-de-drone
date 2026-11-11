@@ -6,7 +6,8 @@
  * Sem imports: este arquivo também roda no Node (scripts/update-aerodromes.ts).
  */
 
-export type AerodromeKind = 'publico' | 'privado' | 'militar';
+/** `aeroporto` = fora do Brasil, vindo do aviationweather.gov. */
+export type AerodromeKind = 'publico' | 'privado' | 'militar' | 'aeroporto';
 
 /** [código, nome, município, UF, lat, lon, tipo] — compacto para o snapshot embutido. */
 export type AerodromeRow = [string, string, string, string, number, number, AerodromeKind];

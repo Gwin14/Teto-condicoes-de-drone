@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { T } from '@/components/ui';
+import { t } from '@/i18n';
 import { fmtDuration } from '@/lib/format';
 import { radius, space, useTheme } from '@/theme/tokens';
 
@@ -56,7 +57,7 @@ export function IslandPreview({
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <View style={{ gap: 2 }}>
           <T v="caption" style={{ color: '#FFFFFFA6' }}>
-            Em voo
+            {t('Em voo')}
           </T>
           <T v="title2" num style={{ color: '#FFFFFF' }}>
             {fmtDuration(elapsedMs)}
@@ -64,7 +65,7 @@ export function IslandPreview({
         </View>
         <View style={{ alignItems: 'flex-end', gap: 2 }}>
           <T v="caption" style={{ color: '#FFFFFFA6' }}>
-            Vento
+            {t('Vento')}
           </T>
           <T v="title3" num style={{ color: '#FFFFFF' }}>
             {wind}
@@ -75,7 +76,7 @@ export function IslandPreview({
         <View style={{ width: `${Math.max(0, Math.min(1, batteryPct)) * 100}%`, height: 5, backgroundColor: statusColor }} />
       </View>
       <T v="caption" style={{ color: '#FFFFFFA6' }} num>
-        Bateria útil estimada · pouse até {landBy}
+        {t('Bateria útil estimada · pouse até {time}', { time: landBy })}
       </T>
     </View>
   );

@@ -13,6 +13,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Icon } from '@/components/Icon';
 import { ScoreRing } from '@/components/ScoreRing';
 import { StatusPill, T } from '@/components/ui';
+import { t } from '@/i18n';
 import { radius, space, useTheme } from '@/theme/tokens';
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -45,7 +46,7 @@ export function ScoreHero({ active }: { active: boolean }) {
     <View style={{ alignItems: 'center', gap: space.xl }}>
       {/* Remonta ao entrar na página para o anel animar de novo. */}
       <ScoreRing key={active ? 'on' : 'off'} score={active ? 86 : 0} verdict="go" size={184} stroke={16} />
-      <StatusPill v="go" label="Bom para voar" />
+      <StatusPill v="go" label={t('Bom para voar')} />
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <Chip icon="wind" label="12 km/h" />
         <Chip icon="gust" label="18 km/h" />
@@ -102,11 +103,11 @@ export function CeilingHero({ active }: { active: boolean }) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
           <View style={{ flex: 1, height: 4, borderRadius: radius.pill, backgroundColor: c.label }} />
           <T v="caption2" style={{ textTransform: 'uppercase', letterSpacing: 1 }}>
-            Teto · 120 m
+            {t('Teto · 120 m')}
           </T>
         </View>
         <T v="caption" tone="secondary">
-          Limite de altura acima do solo (ANAC)
+          {t('Limite de altura acima do solo (ANAC)')}
         </T>
       </View>
       {LEVELS.map((l, i) => (
@@ -123,7 +124,7 @@ export function CeilingHero({ active }: { active: boolean }) {
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingTop: space.xs }}>
         <Icon name="drone" size={14} color={c.tertiary} />
         <T v="caption" tone="tertiary">
-          Exemplo · limite do drone {limit} km/h
+          {t('Exemplo · limite do drone {limit} km/h', { limit })}
         </T>
       </View>
     </View>
@@ -178,7 +179,7 @@ export function AirspaceHero({ active }: { active: boolean }) {
         <Icon name="location" size={20} color={c.accent} />
       </View>
       <View style={{ position: 'absolute', left: 0, top: 6 }}>
-        <StatusPill v="nogo" label="Zona do aeródromo" small />
+        <StatusPill v="nogo" label={t('Zona do aeródromo')} small />
       </View>
     </Animated.View>
   );

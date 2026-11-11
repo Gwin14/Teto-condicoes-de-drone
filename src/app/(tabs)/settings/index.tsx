@@ -8,7 +8,11 @@ import { ScrollView, Switch, View } from 'react-native';
 import { Segmented } from '@/components/Segmented';
 import { Card, ListRow, T } from '@/components/ui';
 import { useDrone } from '@/hooks/useConditions';
+import { useActiveLocation } from '@/hooks/useLocation';
+import { t } from '@/i18n';
 import { fmtSpeed, type SpeedUnit, type TempUnit } from '@/lib/format';
+import { regionAt } from '@/lib/region';
+import { openPro, useIsPro } from '@/lib/purchases';
 import { capabilities, inExpoGo } from '@/native/capabilities';
 import { ensurePermission } from '@/native/notifications';
 import { useApp } from '@/store/app';
@@ -45,28 +49,41 @@ export default function SettingsScreen() {
   const set = useApp((s) => s.set);
   // Valor local durante o arraste; grava no store ao soltar (sem re-render global por frame).
   const [alt, setAlt] = useState(altitude);
+  const { location } = useActiveLocation();
+  const isPro = useIsPro();
+  const br = location ? regionAt(location.lat, location.lon, location.country) === 'BR' : true;
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: c.background }}
       contentContainerStyle={{ padding: space.lg, gap: space.xxl, paddingBottom: space.xxxl * 2 }}>
-      <Group title="Aeronave" footer="O score de voo usa os limites oficiais deste drone.">
+      <Card padded={false}>
+        <ListRow
+          icon="sparkle"
+          title="Teto Pro"
+          subtitle={isPro ? t('Ativo · obrigado por apoiar o Teto!') : t('Previsão de 7 dias, alertas, widgets e mais')}
+          onPress={() => router.push('/paywall')}
+          last
+        />
+      </Card>
+
+      <Group title={t('Aeronave')} footer={t('O score de voo usa os limites oficiais deste drone.')}>
         <Card padded={false}>
           <ListRow
             icon="drone"
             title={`${drone.brand} ${drone.name}`}
-            subtitle={`Vento até ${fmtSpeed(drone.maxWind, speedUnit)} · ${drone.flightTime} min · ${drone.weightG} g`}
+            subtitle={`${t('Vento até {speed}', { speed: fmtSpeed(drone.maxWind, speedUnit) })} · ${drone.flightTime} min · ${drone.weightG} g`}
             onPress={() => router.push('/drone')}
           />
-          <ListRow icon="edit" iconColor={c.secondary} title="Drone personalizado" onPress={() => router.push('/settings/drone-custom')} last />
+          <ListRow icon="edit" iconColor={c.secondary} title={t('Drone personalizado')} onPress={() => openPro('/settings/drone-custom')} last />
         </Card>
       </Group>
 
-      <Group title="Altitude planejada" footer="O vento é interpolado entre os níveis de 10, 80, 120 e 180 m do modelo. Limite legal usual: 120 m (400 ft) acima do solo.">
+      <Group title={t('Altitude planejada')} footer={t('O vento é interpolado entre os níveis de 10, 80, 120 e 180 m do modelo. Limite legal usual: 120 m (400 ft) acima do solo.')}>
         <Card style={{ gap: space.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <T v="body">Altura de voo</T>
+            <T v="body">{t('Altura de voo')}</T>
             <T v="title3" num tone="accent">
               {alt} m
             </T>
@@ -83,16 +100,16 @@ export default function SettingsScreen() {
             onSlidingComplete={(v) => set('altitude', v)}
             minimumTrackTintColor={c.accent}
             maximumTrackTintColor={c.fill}
-            accessibilityLabel="Altitude planejada"
+            accessibilityLabel={t('Altitude planejada')}
           />
         </Card>
       </Group>
 
-      <Group title="Unidades">
+      <Group title={t('Unidades')}>
         <Card style={{ gap: space.lg }}>
           <View style={{ gap: space.sm }}>
             <T v="subhead" tone="secondary">
-              Velocidade do vento
+              {t('Velocidade do vento')}
             </T>
             <Segmented
               values={['km/h', 'm/s', 'kt', 'mph']}
@@ -102,7 +119,7 @@ export default function SettingsScreen() {
           </View>
           <View style={{ gap: space.sm }}>
             <T v="subhead" tone="secondary">
-              Temperatura
+              {t('Temperatura')}
             </T>
             <Segmented
               values={['°C', '°F']}
@@ -113,11 +130,11 @@ export default function SettingsScreen() {
         </Card>
       </Group>
 
-      <Group title="Alertas" footer="Durante o voo, o Teto avisa quando a bateria útil estimada acabar. Para alertas de janela ideal, toque no sino de uma janela na aba Agora.">
+      <Group title={t('Alertas')} footer={t('Durante o voo, o Teto avisa quando a bateria útil estimada acabar. Para alertas de janela ideal, toque no sino de uma janela na aba Agora.')}>
         <Card padded={false}>
           <ListRow
             icon="bell"
-            title="Lembrete de bateria em voo"
+            title={t('Lembrete de bateria em voo')}
             last
             right={
               <Switch
@@ -136,20 +153,27 @@ export default function SettingsScreen() {
         </Card>
       </Group>
 
-      <Group title="Integrações">
+      <Group title={t('Integrações')}>
         <Card padded={false}>
           <ListRow
             icon="widgets"
-            title="Widgets e Live Activity"
-            subtitle={capabilities.widgets ? 'Ativos' : inExpoGo ? 'Prévias no Expo Go' : 'Prévias'}
+            title={t('Widgets e Live Activity')}
+            subtitle={capabilities.widgets ? t('Ativos') : inExpoGo ? t('Prévias no Expo Go') : t('Prévias')}
             onPress={() => router.push('/settings/widgets')}
           />
-          <ListRow icon="law" iconColor={c.secondary} title="Regras para voar no Brasil" subtitle="ANAC, DECEA e Anatel" onPress={() => router.push('/settings/regulations')} last />
+          <ListRow
+            icon="law"
+            iconColor={c.secondary}
+            title={br ? t('Regras para voar no Brasil') : t('Regras para voar')}
+            subtitle={br ? t('ANAC, DECEA e Anatel') : t('Resumo e autoridades oficiais')}
+            onPress={() => router.push('/settings/regulations')}
+            last
+          />
         </Card>
       </Group>
 
       <T v="footnote" tone="tertiary" style={{ textAlign: 'center' }}>
-        Teto {Application.nativeApplicationVersion ?? '1.0.0'} · Previsão Open-Meteo · Kp NOAA SWPC · METAR aviationweather.gov
+        {t('Teto {version} · Previsão Open-Meteo · Kp NOAA SWPC · METAR aviationweather.gov', { version: Application.nativeApplicationVersion ?? '1.0.0' })}
       </T>
     </ScrollView>
   );
