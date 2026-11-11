@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { AnimatedSplash } from '@/components/AnimatedSplash';
 import { BackgroundSync } from '@/components/BackgroundSync';
 import { t } from '@/i18n';
 import { configurePurchases } from '@/lib/purchases';
@@ -41,10 +42,6 @@ export default function RootLayout() {
     };
   }, []);
 
-  useEffect(() => {
-    if (hydrated) SplashScreen.hideAsync().catch(() => {});
-  }, [hydrated]);
-
   useEffect(() => addResponseListener((url) => router.navigate(url as never)), []);
 
   useEffect(() => configurePurchases(), []);
@@ -55,7 +52,8 @@ export default function RootLayout() {
     colors: { ...base.colors, primary: c.accent, background: c.background, card: c.card, text: c.label, border: c.separator },
   };
 
-  if (!hydrated) return null;
+  // A splash nativa só sai quando o AnimatedSplash (idêntico a ela) já está na tela.
+  if (!hydrated) return <AnimatedSplash ready={false} />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: c.background }}>
@@ -111,6 +109,7 @@ export default function RootLayout() {
           </Stack>
         </ThemeProvider>
       </QueryClientProvider>
+      <AnimatedSplash ready />
     </GestureHandlerRootView>
   );
 }
