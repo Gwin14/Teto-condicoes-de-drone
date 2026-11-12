@@ -118,7 +118,9 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -128,6 +130,12 @@
       "pt-BR": "./locales/pt-BR.json",
       "en": "./locales/en.json",
       "es": "./locales/es.json"
+    },
+    "owner": "gwin14",
+    "extra": {
+      "eas": {
+        "projectId": "592fff13-f080-40f6-b965-8fd8e0595595"
+      }
     }
   }
 }
