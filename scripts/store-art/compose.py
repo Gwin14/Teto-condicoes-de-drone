@@ -1,12 +1,14 @@
 """Monta as imagens da App Store do Teto a partir das capturas do simulador.
 
-Uso: python compose.py store/art/raw store/art   (precisa de Pillow)
+Uso: python compose.py [store/art] [en-US pt-BR ...]   (precisa de Pillow)
 
-As capturas em store/art/raw vêm do simulador (iPhone 6,3", `xcrun simctl io <udid> screenshot`),
-com barra de status 9:41, região pt_BR e o Pro liberado só no build usado para as fotos.
-Legendas e telas de cada imagem ficam em copy.json.
+Um conjunto por locale em store/art/<locale>/. en-US é o principal (a App Store usa
+para os idiomas sem conjunto próprio). As capturas em store/art/<locale>/raw vêm do
+simulador (iPhone 6,3", `xcrun simctl io <udid> screenshot`), com barra de status 9:41,
+idioma e região do locale e o Pro liberado só no build usado para as fotos.
+Legendas e telas de cada locale ficam em copy.json.
 
-Gera:
+Gera, em cada store/art/<locale>/:
 - screenshots/NN-*.png  1206x2622 (iPhone 6,3")
 - header-5244x2950.png   cabeçalho da página do produto
 - header-3840x1646.png   cabeçalho panorâmico
@@ -189,9 +191,7 @@ def search(shots, out, W, H, title):
     img.convert('RGB').save(out, optimize=True)
 
 
-def main():
-    src, dst = Path(sys.argv[1]), Path(sys.argv[2])
-    cfg = json.loads((HERE / 'copy.json').read_text())
+def build(cfg, src: Path, dst: Path):
     (dst / 'screenshots').mkdir(parents=True, exist_ok=True)
     for i, item in enumerate(cfg['screenshots'], 1):
         screenshot(src / item['file'], item['title'], item['subtitle'],
@@ -201,6 +201,16 @@ def main():
     header(hero, dst / 'header-5244x2950.png', 5244, 2950, cfg['header']['title'], cfg['header']['subtitle'])
     search(hero, dst / 'search-1920x1280.png', 1920, 1280, cfg['search']['title'])
     search(hero, dst / 'search-3840x2560.png', 3840, 2560, cfg['search']['title'])
+
+
+def main():
+    art = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'store/art'
+    only = sys.argv[2:]  # opcional: só esses locales
+    for locale, cfg in json.loads((HERE / 'copy.json').read_text()).items():
+        if only and locale not in only:
+            continue
+        build(cfg, art / locale / 'raw', art / locale)
+        print('ok', locale)
 
 
 if __name__ == '__main__':

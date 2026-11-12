@@ -13,7 +13,7 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSSupportsLiveActivities": true,
-        "CFBundleDevelopmentRegion": "pt-BR",
+        "CFBundleDevelopmentRegion": "en",
         "CFBundleAllowMixedLocalizations": true,
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -50,7 +50,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "O Teto usa sua localização para mostrar as condições de voo exatamente onde você está e os aeródromos próximos."
+          "locationWhenInUsePermission": "Teto uses your location to show flying conditions exactly where you are and nearby airports."
         }
       ],
       [
@@ -67,8 +67,8 @@
           "widgets": [
             {
               "name": "TetoCondicoes",
-              "displayName": "Condições de voo",
-              "description": "Score de voo, vento e a próxima janela ideal no lugar onde você voa.",
+              "displayName": "Flying conditions",
+              "description": "Flight score, wind and the next good window where you fly.",
               "ios": {
                 "supportedFamilies": [
                   "systemSmall",
@@ -87,8 +87,8 @@
             },
             {
               "name": "TetoBloqueio",
-              "displayName": "Voo na tela bloqueada",
-              "description": "Score e vento direto na tela bloqueada.",
+              "displayName": "Flying on the Lock Screen",
+              "description": "Score and wind right on your Lock Screen.",
               "ios": {
                 "supportedFamilies": [
                   "accessoryCircular",
