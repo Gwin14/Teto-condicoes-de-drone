@@ -1,0 +1,14 @@
+{
+  "screenshots": [
+    {"file": "now.png", "title": "Previsão de voo para drone", "subtitle": "Score de 0 a 100 com vento e rajadas na altura em que você voa"},
+    {"file": "week.png", "title": "A melhor janela de voo da semana", "subtitle": "Previsão de 7 dias, hora a hora, com as horas boas em destaque"},
+    {"file": "map.png", "title": "Aeródromos e zonas no mapa", "subtitle": "Toque e segure em qualquer ponto para ver o score de voo ali"},
+    {"file": "gnss.png", "title": "Satélites GPS e clima espacial", "subtitle": "Satélites visíveis, PDOP e índice Kp antes de decolar"},
+    {"file": "drone.png", "title": "Os limites do seu drone", "subtitle": "Vento máximo, temperatura e autonomia do seu modelo entram no score"},
+    {"file": "sun.png", "title": "Hora dourada para filmar", "subtitle": "Posição do sol, hora azul e sombras para planejar a tomada aérea"},
+    {"file": "widgets2.png", "title": "Widgets e Live Activity", "subtitle": "Score na tela inicial, na tela bloqueada e na Dynamic Island"}
+  ],
+  "hero": ["week.png", "now.png", "gnss.png"],
+  "header": {"title": "Dá pra voar agora?", "subtitle": "Previsão para drone com vento, rajadas, aeródromos e satélites, ajustada aos limites do seu modelo."},
+  "search": {"title": "Previsão de voo para drone"}
+}
