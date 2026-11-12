@@ -23,7 +23,7 @@ const FEATURES: { icon: IconName; title: string; body: string }[] = [
 ];
 
 const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
-const PRIVACY_URL = `https://gwin14.github.io/Condicoes-voo-drone/${lang}/privacy.html`;
+const PRIVACY_URL = `https://gwin14.github.io/Teto-condicoes-de-drone/${lang}/privacy.html`;
 
 function trialDays(p: PurchasesPackage) {
   const intro = p.product.introPrice;
