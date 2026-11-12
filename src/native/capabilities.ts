@@ -34,9 +34,17 @@ export const capabilities = {
   maps: OS !== 'web',
 };
 
-export function capabilityNote(kind: 'widgets' | 'liveActivities') {
+/** Texto para o usuário final: como usar o recurso, ou por que ele não está disponível. */
+export function capabilityNote(kind: 'widgets' | 'lockWidgets' | 'liveActivities') {
   if (OS === 'web') return t('Indisponível na web.');
   if (inExpoGo) return t('Requer development build — no Expo Go você vê a prévia.');
-  if (kind === 'liveActivities' && OS !== 'ios') return t('Live Activities são exclusivas do iOS.');
-  return capabilities[kind] ? t('Ativo neste dispositivo.') : t('Módulo nativo não encontrado nesta build.');
+  if (kind !== 'widgets' && OS !== 'ios') return t('Exclusivo do iOS');
+  const available = kind === 'liveActivities' ? capabilities.liveActivities : capabilities.widgets;
+  if (!available) return t('Indisponível neste aparelho.');
+  if (kind === 'widgets')
+    return OS === 'ios'
+      ? t('Toque e segure a tela de início, toque em Editar › Adicionar widget e procure Teto.')
+      : t('Toque e segure a tela inicial, toque em Widgets e procure Teto.');
+  if (kind === 'lockWidgets') return t('Toque e segure a tela bloqueada, toque em Personalizar e adicione o Teto.');
+  return t('Aparece sozinha quando você decola pelo Checklist e decolagem.');
 }

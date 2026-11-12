@@ -57,7 +57,7 @@ export default function WidgetsScreen() {
         <ListRow
           icon="lock"
           title={t('Widgets de tela bloqueada')}
-          subtitle={process.env.EXPO_OS === 'ios' ? capabilityNote('widgets') : t('Exclusivo do iOS')}
+          subtitle={capabilityNote('lockWidgets')}
           right={<Icon name={capabilities.widgets && process.env.EXPO_OS === 'ios' ? 'check' : 'info'} size={20} color={capabilities.widgets ? c.go : c.tertiary} />}
         />
         <ListRow
@@ -103,17 +103,6 @@ export default function WidgetsScreen() {
           </Section>
         </>
       )}
-
-      <Card style={{ gap: space.sm }}>
-        <T v="headline">{t('Como ativar')}</T>
-        <T v="subhead" tone="secondary">
-          {t('Widgets e Live Activities precisam de código nativo, que o Expo Go não inclui. Gere uma development build com')}{' '}
-          <T v="subhead" style={{ fontFamily: process.env.EXPO_OS === 'ios' ? 'Menlo' : 'monospace' }}>
-            npx expo run:ios
-          </T>{' '}
-          {t('(ou EAS Build). Todo o resto do app continua funcionando no Expo Go.')}
-        </T>
-      </Card>
     </ScrollView>
   );
 }
